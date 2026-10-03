@@ -24,11 +24,17 @@ jobs:
       # a plugin that merely parses can still be one the marketplace
       # refuses, and finding that out at install time is finding out in
       # front of a user.
+      # Both manifests, because `validate .` at the root reads the
+      # marketplace and `validate plugins/airdress` reads the plugin, and
+      # a marketplace that validates can still point at a plugin that
+      # does not. Measured 2026-10-03: the root call reports only
+      # "Validating marketplace manifest".
+      - name: Validate the marketplace
+        run: npx --yes @anthropic-ai/claude-code@latest plugin validate --strict .
       - name: Validate the plugin
-        run: |
-          npx --yes @anthropic-ai/claude-code@latest plugin validate --strict .
+        run: npx --yes @anthropic-ai/claude-code@latest plugin validate --strict plugins/airdress
 
-      - name: Validate the marketplace entry
+      - name: The two manifests agree
         run: |
           python3 - <<'PY'
           import json, pathlib, sys
