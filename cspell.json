@@ -64,6 +64,7 @@
     "reqwest",
     "rstrip",
     "rudderanalytics",
+    "rustc",
     "rustflags",
     "rustls",
     "serde",
