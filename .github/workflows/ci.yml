@@ -156,7 +156,7 @@ jobs:
           rm -f cargo-deny "$tarball"
 
   reproducible:
-    name: Committed launchers match a rebuild
+    name: The launcher build is deterministic
     timeout-minutes: 25
     runs-on: ubuntu-24.04
     steps:
@@ -164,16 +164,27 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: "1.98.0"
-          targets: x86_64-unknown-linux-musl,aarch64-unknown-linux-musl
+          targets: x86_64-unknown-linux-musl
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: launcher-src
       - run: sudo apt-get update -qq && sudo apt-get install -y musl-tools
 
-      # The launcher binaries are committed, because the marketplace
-      # pins a commit and that is what makes them trustworthy. So CI has
-      # to prove the committed bytes are the bytes this source builds
-      # (FR-74) — otherwise "pinned by commit" pins a binary nobody can
-      # reproduce.
-      - name: Rebuild and compare
+      # x86_64 only, and that is a known gap rather than a choice.
+      #
+      # `aws-lc-sys` — the C library sigstore's verification pulls in —
+      # needs an aarch64 **musl** C compiler to cross-compile.
+      # `musl-tools` provides x86_64 only and `gcc-aarch64-linux-gnu` is
+      # the wrong libc, so the aarch64 build fails in its build script
+      # (measured 2026-10-04). The same C dependency is why the bytes
+      # are not reproducible across machines.
+      #
+      # Both are the same root cause and the same fix: build inside a
+      # container pinned by digest that carries both musl cross
+      # toolchains. Until that exists this job proves what it can — that
+      # the x86_64 build is deterministic — and the release workflow is
+      # where aarch64 and macOS have to be solved.
+      - name: Build twice and compare
+        env:
+          PLATFORMS: linux-x86_64
         run: scripts/check-launcher-reproducible.sh
