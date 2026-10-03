@@ -1,0 +1,10 @@
+# Build output.
+launcher-src/target/
+
+# The launcher binaries are committed per platform, from
+# `launcher-src/`, and CI refuses a commit whose binaries differ from a
+# rebuild. They live under plugins/airdress/launcher/<platform>/ and are
+# deliberately NOT ignored.
+
+# Editor and OS noise.
+.DS_Store

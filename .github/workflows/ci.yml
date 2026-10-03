@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  plugin:
+    name: Plugin manifest and docs
+    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # The manifest, as the harness reads it. `--strict` is the point:
+      # a plugin that merely parses can still be one the marketplace
+      # refuses, and finding that out at install time is finding out in
+      # front of a user.
+      - name: Validate the plugin
+        run: |
+          npx --yes @anthropic-ai/claude-code@latest plugin validate --strict .
+
+      - name: Validate the marketplace entry
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, sys
+
+          market = json.loads(pathlib.Path(".claude-plugin/marketplace.json").read_text())
+          plugin = json.loads(
+              pathlib.Path("plugins/airdress/.claude-plugin/plugin.json").read_text()
+          )
+
+          # One plugin, one marketplace, and neither named after anybody
+          # else's product (FR-2).
+          assert market["name"] == "airdress", market["name"]
+          assert len(market["plugins"]) == 1, market["plugins"]
+          assert market["plugins"][0]["name"] == plugin["name"]
+          for forbidden in ("claude", "anthropic", "official"):
+              for name in (market["name"], plugin["name"]):
+                  assert forbidden not in name.lower(), f"{name} contains {forbidden}"
+
+          # Every command the manifest names must exist, and every file
+          # in commands/ must be named: two lists that stop agreeing is
+          # the defect this project keeps paying for elsewhere.
+          declared = set(plugin["commands"])
+          on_disk = {p.stem for p in pathlib.Path("plugins/airdress/commands").glob("*.md")}
+          assert declared == on_disk, f"declared {sorted(declared)}, on disk {sorted(on_disk)}"
+
+          # No skill (D-33): the rules a model must always follow are in
+          # the server's `instructions`, which a harness always loads.
+          assert not pathlib.Path("plugins/airdress/skills").exists(), "a skills/ appeared"
+          # No top-level bin/: claude.ai and Cowork refuse a plugin with one.
+          assert not pathlib.Path("bin").exists(), "a top-level bin/ appeared"
+
+          print(f"{len(declared)} commands, manifest consistent")
+          PY
+
+      - uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: "**/*.md"
+
+      - uses: streetsidesoftware/cspell-action@v6
+        with:
+          incremental_files_only: false
+
+  hygiene:
+    name: Public hygiene
+    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: scripts/check-public.sh
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+
+      # Document numbers belong in comments and prose, never in a path.
+      # This repository has no code that addresses one by name, so the
+      # check is the path rule alone.
+      - name: Document numbers stay out of paths
+        run: |
+          if git ls-files | grep -Ei '(spec|rdr|rcp)[_-]?[0-9]{3}' | grep -v '\.md$'; then
+            echo "A document number belongs in a comment, not in a file name." >&2
+            exit 1
+          fi
+          echo "no document numbers in paths"
+
+  launcher:
+    name: Launcher
+    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.98.0"
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: launcher-src
+      - run: cargo fmt --manifest-path launcher-src/Cargo.toml --check
+      - run: cargo clippy --manifest-path launcher-src/Cargo.toml --all-targets -- -D warnings
+      - run: cargo test --manifest-path launcher-src/Cargo.toml
+
+      # No telemetry, in the launcher or anything it pulls in (FR-112).
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          manifest-path: launcher-src/Cargo.toml
+          command: check licenses advisories bans sources
+
+  reproducible:
+    name: Committed launchers match a rebuild
+    timeout-minutes: 25
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.98.0"
+          targets: x86_64-unknown-linux-musl,aarch64-unknown-linux-musl
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: launcher-src
+      - run: sudo apt-get update -qq && sudo apt-get install -y musl-tools
+
+      # The launcher binaries are committed, because the marketplace
+      # pins a commit and that is what makes them trustworthy. So CI has
+      # to prove the committed bytes are the bytes this source builds
+      # (FR-74) — otherwise "pinned by commit" pins a binary nobody can
+      # reproduce.
+      - name: Rebuild and compare
+        run: scripts/check-launcher-reproducible.sh

@@ -1,0 +1,67 @@
+# cargo-deny for the launcher.
+#
+# The bans are the section worth reading. This program runs before every
+# session, decides whether anything else runs, and contacts exactly two
+# hosts. A single transitive dependency that phoned somewhere would
+# break that silently, so it is refused here rather than audited later
+# (SPEC-133 FR-112).
+
+[graph]
+all-features = true
+
+[licenses]
+# What this project may ship. MPL-2.0 is file-level copyleft and is
+# fine for a dependency we do not modify.
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "MIT",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Zlib",
+    "MPL-2.0",
+    "CDLA-Permissive-2.0",
+]
+confidence-threshold = 0.9
+
+[advisories]
+yanked = "deny"
+# An ignore here needs a sentence saying why the advisory does not
+# reach this code, and a date. An empty list is the resting state.
+ignore = []
+
+[bans]
+multiple-versions = "allow"
+wildcards = "deny"
+
+# No analytics, no crash reporting, no tracing exporter. Each of these
+# would open a connection to a host the user did not choose.
+deny = [
+    { crate = "sentry", reason = "no crash reporting: this process must contact only the user's hub and operators" },
+    { crate = "sentry-core", reason = "no crash reporting" },
+    { crate = "sentry-types", reason = "no crash reporting" },
+    { crate = "sentry-backtrace", reason = "no crash reporting" },
+    { crate = "sentry-panic", reason = "no crash reporting" },
+    { crate = "sentry-tracing", reason = "no crash reporting" },
+    { crate = "opentelemetry-otlp", reason = "no trace export off this machine" },
+    { crate = "opentelemetry-jaeger", reason = "no trace export off this machine" },
+    { crate = "opentelemetry-zipkin", reason = "no trace export off this machine" },
+    { crate = "opentelemetry-datadog", reason = "no trace export off this machine" },
+    { crate = "posthog", reason = "no analytics" },
+    { crate = "posthog-rs", reason = "no analytics" },
+    { crate = "segment", reason = "no analytics" },
+    { crate = "mixpanel", reason = "no analytics" },
+    { crate = "amplitude", reason = "no analytics" },
+    { crate = "rudderanalytics", reason = "no analytics" },
+    { crate = "aptabase", reason = "no analytics" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+# Nothing from git: the launcher is the one program in this product that
+# must be auditable from the lockfile alone.
+allow-git = []

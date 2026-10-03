@@ -1,0 +1,85 @@
+{
+  "name": "airdress",
+  "displayName": "Airdress",
+  "version": "0.1.0",
+  "description": "Query your airdresses, run your functions dev loop, chat as an agent device, and coordinate agents.",
+  "author": { "name": "Airdress", "url": "https://airdress.co" },
+  "license": "Apache-2.0",
+  "homepage": "https://airdress.co",
+  "repository": "https://github.com/airdress-co/claude-plugin",
+  "keywords": ["airdress", "mcp", "agents"],
+  "mcpServers": {
+    "airdress": {
+      "command": "sh",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/launcher/launch.sh",
+        "--harness", "claude-code",
+        "--device-label-template", "Claude Code on {host}",
+        "--state-dir", "${CLAUDE_PLUGIN_DATA}",
+        "--profile", "${user_config.profile}",
+        "--default-airdress", "${user_config.default_airdress}",
+        "--read-only", "${user_config.read_only}",
+        "--chat", "${user_config.chat}",
+        "--bus", "${user_config.bus}",
+        "--bus-topics", "${user_config.bus_topics}",
+        "--bus-label", "${user_config.bus_label}"
+      ]
+    }
+  },
+  "userConfig": {
+    "profile": {
+      "type": "string",
+      "title": "CLI profile",
+      "description": "Empty: the active airdress CLI profile",
+      "default": ""
+    },
+    "default_airdress": {
+      "type": "string",
+      "title": "Default airdress",
+      "description": "Empty: the .airdress marker in the working tree, then the profile's",
+      "default": ""
+    },
+    "read_only": {
+      "type": "boolean",
+      "title": "Read only",
+      "description": "Hide every tool that changes something, bus writes included",
+      "default": false
+    },
+    "chat": {
+      "type": "boolean",
+      "title": "Agent chat",
+      "description": "Read and send in the agent's own lane and assigned conversations",
+      "default": true
+    },
+    "bus": {
+      "type": "boolean",
+      "title": "Join the agent bus",
+      "description": "Register this session on the agent bus at start",
+      "default": false
+    },
+    "bus_topics": {
+      "type": "string",
+      "title": "Bus topics",
+      "description": "Comma-separated",
+      "default": "general"
+    },
+    "bus_label": {
+      "type": "string",
+      "title": "Session label",
+      "description": "Empty: <host> · <repo>",
+      "default": ""
+    }
+  },
+  "commands": {
+    "login": { "source": "./commands/login.md", "description": "Sign in to Airdress" },
+    "status": { "source": "./commands/status.md", "description": "Account, airdress, capabilities, agent device, bus, verification" },
+    "bus": { "source": "./commands/bus.md", "description": "Sessions, topics and unread on the agent bus" },
+    "claim": { "source": "./commands/claim.md", "description": "Claim a task before working on it", "argumentHint": "<name> [topic]" },
+    "fn": { "source": "./commands/fn.md", "description": "Functions: list, versions, logs, deploy", "argumentHint": "[name]" }
+  },
+  "channels": [{ "server": "airdress", "displayName": "Airdress" }],
+  "documentationUrl": "https://airdress.co/docs/claude",
+  "supportUrl": "https://airdress.co/support",
+  "privacyPolicyUrl": "https://airdress.co/privacy",
+  "termsOfServiceUrl": "https://airdress.co/terms"
+}

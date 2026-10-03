@@ -1,0 +1,108 @@
+name: Withdrawal list
+
+on:
+  schedule:
+    # Weekly, and the re-signing is the point rather than the content:
+    # the launcher accepts a list for 14 days from its `issued_at`, so a
+    # list that is not re-signed becomes a refusal to start. Twice the
+    # validity window of headroom, deliberately — one missed run must not
+    # stop anybody working.
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      yank:
+        description: "Version to withdraw, e.g. 0.1.0 (blank: just re-sign)"
+        required: false
+      reason:
+        description: "Why, in one sentence a user will read"
+        required: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  sign:
+    name: Re-sign and publish
+    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: denylist
+          # The branch may not exist on the first run.
+          fetch-depth: 0
+
+      - name: Update the list
+        env:
+          YANK: ${{ inputs.yank }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, datetime
+
+          path = pathlib.Path("denylist.json")
+          list_ = json.loads(path.read_text()) if path.exists() else {"yanked": []}
+
+          yank = (os.environ.get("YANK") or "").strip()
+          if yank:
+              reason = (os.environ.get("REASON") or "").strip()
+              if not reason:
+                  raise SystemExit("a withdrawal needs a reason: a user reads it")
+              today = datetime.date.today().isoformat()
+              existing = [y for y in list_["yanked"] if y["version"] == yank]
+              if not existing:
+                  list_["yanked"].append(
+                      {"version": yank, "reason": reason, "since": today}
+                  )
+              else:
+                  # A withdrawal is never silently re-dated: the day it
+                  # happened is what the user is told.
+                  print(f"{yank} was already withdrawn on {existing[0]['since']}")
+
+          # Re-stamped on every run, withdrawal or not. "The list is old"
+          # and "nothing was withdrawn" must not look the same.
+          list_["issued_at"] = (
+              datetime.datetime.now(datetime.timezone.utc)
+              .replace(microsecond=0)
+              .isoformat()
+              .replace("+00:00", "Z")
+          )
+          path.write_text(json.dumps(list_, indent=2) + "\n")
+          print(path.read_text())
+          PY
+
+      - uses: sigstore/cosign-installer@v3
+
+      # Signed by THIS workflow, which is a different identity from the
+      # release workflow's. A compromised release job therefore cannot
+      # un-withdraw itself, which is the only reason to have a separate
+      # workflow at all.
+      - name: Sign
+        run: |
+          cosign sign-blob --yes \
+            --bundle denylist.json.sigstore.json \
+            denylist.json
+
+      - name: Commit to the denylist branch
+        run: |
+          git config user.name "airdress-bot"
+          git config user.email "bot@airdress.co"
+          git add denylist.json denylist.json.sigstore.json
+          git commit -m "denylist: re-signed $(date -u +%Y-%m-%d)" || echo "nothing to commit"
+          git push origin HEAD:denylist
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.RELEASE_WIF_PROVIDER }}
+          service_account: ${{ vars.RELEASE_PUBLISHER_SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+
+      # Overwritten in place, which is the one object under this prefix
+      # the publisher may overwrite: every release artifact is immutable,
+      # and this one has to change every week.
+      - name: Publish to the CDN
+        run: |
+          gcloud storage cp denylist.json denylist.json.sigstore.json \
+            "gs://${{ vars.DOWNLOADS_BUCKET }}/claude-plugin/" \
+            --cache-control="public, max-age=300"

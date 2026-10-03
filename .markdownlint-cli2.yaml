@@ -1,0 +1,8 @@
+config:
+  # Long prose lines are fine; this repository's Markdown is read on a
+  # web page, not in an 80-column terminal.
+  MD013: false
+globs:
+  - "**/*.md"
+ignores:
+  - "launcher-src/target/**"

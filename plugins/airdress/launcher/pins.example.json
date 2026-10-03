@@ -1,0 +1,68 @@
+{
+  "_comment": [
+    "The shape of launcher/pins.json, which is NOT in this tree between",
+    "releases: the release workflow writes it in a follow-up commit, once",
+    "the artifacts it pins exist. The marketplace entry pins a commit; that",
+    "commit's pins.json decides everything the launcher will accept.",
+    "CI parses this file with the launcher's own parser, so the example",
+    "cannot drift from what the program reads."
+  ],
+  "version": "0.1.0",
+  "platforms": {
+    "linux-x86_64": {
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bundle": {
+        "cdn": "https://downloads.airdress.co/claude-plugin/v0.1.0/airdress-linux-x86_64.mcpb",
+        "github": "https://github.com/airdress-co/claude-plugin/releases/download/v0.1.0/airdress-linux-x86_64.mcpb"
+      },
+      "sigstore": {
+        "cdn": "https://downloads.airdress.co/claude-plugin/v0.1.0/airdress-linux-x86_64.mcpb.sigstore.json",
+        "github": "https://github.com/airdress-co/claude-plugin/releases/download/v0.1.0/airdress-linux-x86_64.mcpb.sigstore.json"
+      },
+      "provenance": {
+        "cdn": "https://downloads.airdress.co/claude-plugin/v0.1.0/airdress-linux-x86_64.mcpb.intoto.jsonl",
+        "github": "https://github.com/airdress-co/claude-plugin/releases/download/v0.1.0/airdress-linux-x86_64.mcpb.intoto.jsonl"
+      },
+      "cert_identity": "https://github.com/airdress-co/claude-plugin/.github/workflows/release.yml@refs/tags/v0.1.0",
+      "cert_issuer": "https://token.actions.githubusercontent.com"
+    },
+    "linux-aarch64": {
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "bundle": {
+        "cdn": "https://downloads.airdress.co/claude-plugin/v0.1.0/airdress-linux-aarch64.mcpb",
+        "github": "https://github.com/airdress-co/claude-plugin/releases/download/v0.1.0/airdress-linux-aarch64.mcpb"
+      },
+      "sigstore": {
+        "cdn": "https://downloads.airdress.co/claude-plugin/v0.1.0/airdress-linux-aarch64.mcpb.sigstore.json",
+        "github": "https://github.com/airdress-co/claude-plugin/releases/download/v0.1.0/airdress-linux-aarch64.mcpb.sigstore.json"
+      },
+      "cert_identity": "https://github.com/airdress-co/claude-plugin/.github/workflows/release.yml@refs/tags/v0.1.0",
+      "cert_issuer": "https://token.actions.githubusercontent.com"
+    },
+    "darwin-universal": {
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "bundle": {
+        "cdn": "https://downloads.airdress.co/claude-plugin/v0.1.0/airdress-darwin-universal.mcpb",
+        "github": "https://github.com/airdress-co/claude-plugin/releases/download/v0.1.0/airdress-darwin-universal.mcpb"
+      },
+      "sigstore": {
+        "cdn": "https://downloads.airdress.co/claude-plugin/v0.1.0/airdress-darwin-universal.mcpb.sigstore.json",
+        "github": "https://github.com/airdress-co/claude-plugin/releases/download/v0.1.0/airdress-darwin-universal.mcpb.sigstore.json"
+      },
+      "cert_identity": "https://github.com/airdress-co/claude-plugin/.github/workflows/release.yml@refs/tags/v0.1.0",
+      "cert_issuer": "https://token.actions.githubusercontent.com"
+    }
+  },
+  "denylist": {
+    "list": {
+      "cdn": "https://downloads.airdress.co/claude-plugin/denylist.json",
+      "github": "https://github.com/airdress-co/claude-plugin/raw/denylist/denylist.json"
+    },
+    "sigstore": {
+      "cdn": "https://downloads.airdress.co/claude-plugin/denylist.json.sigstore.json",
+      "github": "https://github.com/airdress-co/claude-plugin/raw/denylist/denylist.json.sigstore.json"
+    },
+    "cert_identity": "https://github.com/airdress-co/claude-plugin/.github/workflows/denylist.yml@refs/heads/main",
+    "cert_issuer": "https://token.actions.githubusercontent.com"
+  }
+}

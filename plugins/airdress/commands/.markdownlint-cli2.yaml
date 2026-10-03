@@ -1,0 +1,6 @@
+# A command file is a prompt with front matter, not a document: its
+# first line is an instruction, and a heading above it would be text the
+# model has to read past.
+config:
+  MD013: false
+  MD041: false
