@@ -104,5 +104,5 @@ jobs:
       - name: Publish to the CDN
         run: |
           gcloud storage cp denylist.json denylist.json.sigstore.json \
-            "gs://${{ vars.DOWNLOADS_BUCKET }}/claude-plugin/" \
+            "gs://${{ vars.DOWNLOADS_BUCKET }}/claude-code/" \
             --cache-control="public, max-age=300"

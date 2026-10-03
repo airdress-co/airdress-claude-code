@@ -6,7 +6,7 @@
   "author": { "name": "Airdress", "url": "https://airdress.co" },
   "license": "Apache-2.0",
   "homepage": "https://airdress.co",
-  "repository": "https://github.com/airdress-co/claude-plugin",
+  "repository": "https://github.com/airdress-co/airdress-claude-code",
   "keywords": ["airdress", "mcp", "agents"],
   "mcpServers": {
     "airdress": {

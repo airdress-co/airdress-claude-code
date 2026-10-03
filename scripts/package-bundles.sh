@@ -26,7 +26,7 @@ for platform in linux-x86_64 linux-aarch64 darwin-universal; do
 # airdress-mcp $version ($platform)
 
 The Airdress MCP server. Built from airdress-cli, reproducibly, by the
-release workflow of https://github.com/airdress-co/claude-plugin — the
+release workflow of https://github.com/airdress-co/airdress-claude-code — the
 signature beside this bundle names that workflow and that tag, and the
 plugin's launcher refuses anything else.
 
@@ -55,13 +55,13 @@ and the withdrawal list before it runs anything:
 \`\`\`sh
 cosign verify-blob \\
   --bundle airdress-linux-x86_64.mcpb.sigstore.json \\
-  --certificate-identity "https://github.com/airdress-co/claude-plugin/.github/workflows/release.yml@refs/tags/$version" \\
+  --certificate-identity "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml@refs/tags/$version" \\
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \\
   airdress-linux-x86_64.mcpb
 \`\`\`
 
 The same bytes are at
-\`https://downloads.airdress.co/claude-plugin/v$version/\`, which keeps no
+\`https://downloads.airdress.co/claude-code/v$version/\`, which keeps no
 record of who downloaded what. GitHub keeps its own request logs.
 
 SLSA provenance is attached. The level actually reached by this

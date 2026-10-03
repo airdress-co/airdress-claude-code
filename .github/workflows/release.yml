@@ -217,7 +217,7 @@ jobs:
             --verify-tag
 
       # Our CDN, second, through a prefix-scoped publisher that may only
-      # create objects under `claude-plugin/`. The bytes are identical;
+      # create objects under `claude-code/`. The bytes are identical;
       # the launcher verifies the same signature from either origin.
       - uses: google-github-actions/auth@v2
         with:
@@ -229,7 +229,7 @@ jobs:
           set -euo pipefail
           tag="${{ github.ref_name }}"
           gcloud storage cp dist/* \
-            "gs://${{ vars.DOWNLOADS_BUCKET }}/claude-plugin/$tag/" \
+            "gs://${{ vars.DOWNLOADS_BUCKET }}/claude-code/$tag/" \
             --cache-control="public, max-age=31536000, immutable"
 
       - name: Say what has to happen next

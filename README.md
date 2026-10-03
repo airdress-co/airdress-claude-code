@@ -5,7 +5,7 @@ and run your functions dev loop — validate, deploy, promote — without
 leaving the session you are already in.
 
 ```text
-/plugin marketplace add airdress-co/claude-plugin
+/plugin marketplace add airdress-co/airdress-claude-code
 /plugin install airdress@airdress
 /airdress:login
 ```
@@ -95,7 +95,7 @@ Check it yourself, from either origin:
 cosign verify-blob \
   --bundle airdress-linux-x86_64.mcpb.sigstore.json \
   --certificate-identity \
-    "https://github.com/airdress-co/claude-plugin/.github/workflows/release.yml@refs/tags/v0.1.0" \
+    "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml@refs/tags/v0.1.0" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
   airdress-linux-x86_64.mcpb
 ```
@@ -109,7 +109,7 @@ a commit whose binaries differ.
 
 | Origin | What it is |
 | -------- | ----------- |
-| `downloads.airdress.co/claude-plugin/…` | Tried first. **We keep no request record of this path** — load-balancer logging and storage access logs for it are switched off and a scheduled check looks for any entry that appears anyway. |
+| `downloads.airdress.co/claude-code/…` | Tried first. **We keep no request record of this path** — load-balancer logging and storage access logs for it are switched off and a scheduled check looks for any entry that appears anyway. |
 | GitHub Releases | The fallback and the public record. **GitHub keeps its own request logs**, which is the one place outside our control where a download of this plugin is recorded. |
 
 Neither is trusted. The hash, the signature identity and the inclusion

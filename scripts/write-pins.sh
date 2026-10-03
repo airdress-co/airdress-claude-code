@@ -20,10 +20,10 @@ import json, pathlib, sys
 
 version = sys.argv[1]
 tag = f"v{version}"
-cdn = f"https://downloads.airdress.co/claude-plugin/{tag}"
-gh = f"https://github.com/airdress-co/claude-plugin/releases/download/{tag}"
+cdn = f"https://downloads.airdress.co/claude-code/{tag}"
+gh = f"https://github.com/airdress-co/airdress-claude-code/releases/download/{tag}"
 identity = (
-    "https://github.com/airdress-co/claude-plugin/.github/workflows/release.yml"
+    "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml"
     f"@refs/tags/{tag}"
 )
 issuer = "https://token.actions.githubusercontent.com"
@@ -54,15 +54,15 @@ pins = {
     "platforms": platforms,
     "denylist": {
         "list": {
-            "cdn": "https://downloads.airdress.co/claude-plugin/denylist.json",
-            "github": "https://github.com/airdress-co/claude-plugin/raw/denylist/denylist.json",
+            "cdn": "https://downloads.airdress.co/claude-code/denylist.json",
+            "github": "https://github.com/airdress-co/airdress-claude-code/raw/denylist/denylist.json",
         },
         "sigstore": {
-            "cdn": "https://downloads.airdress.co/claude-plugin/denylist.json.sigstore.json",
-            "github": "https://github.com/airdress-co/claude-plugin/raw/denylist/denylist.json.sigstore.json",
+            "cdn": "https://downloads.airdress.co/claude-code/denylist.json.sigstore.json",
+            "github": "https://github.com/airdress-co/airdress-claude-code/raw/denylist/denylist.json.sigstore.json",
         },
         "cert_identity": (
-            "https://github.com/airdress-co/claude-plugin/.github/workflows/denylist.yml"
+            "https://github.com/airdress-co/airdress-claude-code/.github/workflows/denylist.yml"
             "@refs/heads/main"
         ),
         "cert_issuer": issuer,

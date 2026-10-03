@@ -188,27 +188,27 @@ mod tests {
                 "linux-x86_64": {
                     "sha256": "a".repeat(64),
                     "bundle": {
-                        "cdn": "https://downloads.airdress.co/claude-plugin/v0.1.0/airdress-linux-x86_64.mcpb",
-                        "github": "https://github.com/airdress-co/claude-plugin/releases/download/v0.1.0/airdress-linux-x86_64.mcpb"
+                        "cdn": "https://downloads.airdress.co/claude-code/v0.1.0/airdress-linux-x86_64.mcpb",
+                        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.0/airdress-linux-x86_64.mcpb"
                     },
                     "sigstore": {
-                        "cdn": "https://downloads.airdress.co/claude-plugin/v0.1.0/airdress-linux-x86_64.mcpb.sigstore.json",
-                        "github": "https://github.com/airdress-co/claude-plugin/releases/download/v0.1.0/airdress-linux-x86_64.mcpb.sigstore.json"
+                        "cdn": "https://downloads.airdress.co/claude-code/v0.1.0/airdress-linux-x86_64.mcpb.sigstore.json",
+                        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.0/airdress-linux-x86_64.mcpb.sigstore.json"
                     },
-                    "cert_identity": "https://github.com/airdress-co/claude-plugin/.github/workflows/release.yml@refs/tags/v0.1.0",
+                    "cert_identity": "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml@refs/tags/v0.1.0",
                     "cert_issuer": "https://token.actions.githubusercontent.com"
                 }
             },
             "denylist": {
                 "list": {
-                    "cdn": "https://downloads.airdress.co/claude-plugin/denylist.json",
-                    "github": "https://github.com/airdress-co/claude-plugin/raw/denylist/denylist.json"
+                    "cdn": "https://downloads.airdress.co/claude-code/denylist.json",
+                    "github": "https://github.com/airdress-co/airdress-claude-code/raw/denylist/denylist.json"
                 },
                 "sigstore": {
-                    "cdn": "https://downloads.airdress.co/claude-plugin/denylist.json.sigstore.json",
-                    "github": "https://github.com/airdress-co/claude-plugin/raw/denylist/denylist.json.sigstore.json"
+                    "cdn": "https://downloads.airdress.co/claude-code/denylist.json.sigstore.json",
+                    "github": "https://github.com/airdress-co/airdress-claude-code/raw/denylist/denylist.json.sigstore.json"
                 },
-                "cert_identity": "https://github.com/airdress-co/claude-plugin/.github/workflows/denylist.yml@refs/heads/main",
+                "cert_identity": "https://github.com/airdress-co/airdress-claude-code/.github/workflows/denylist.yml@refs/heads/main",
                 "cert_issuer": "https://token.actions.githubusercontent.com"
             }
         })
