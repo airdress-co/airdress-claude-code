@@ -31,6 +31,7 @@
     "hexdigit",
     "intoto",
     "isoformat",
+    "jaeger",
     "jsonl",
     "keepParent",
     "keychain",
@@ -85,7 +86,8 @@
     "urlsafe",
     "webpki",
     "xcrun",
-    "yanked"
+    "yanked",
+    "zipkin"
   ],
   "ignorePaths": [
     ".git/",
