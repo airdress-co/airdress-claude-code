@@ -19,6 +19,20 @@ path = "src/main.rs"
 ureq = { version = "2.12", default-features = false, features = ["tls", "gzip"] }
 # Offline Sigstore verification: Fulcio chain, certificate identity,
 # signature, Rekor inclusion proof against the embedded trust root.
+# Offline verification only: the Fulcio chain, the certificate identity,
+# the signature and Rekor's inclusion proof, against an embedded trust
+# root. No TUF refresh (that is `sigstore-trust-root`, deliberately
+# absent).
+#
+# `rustls-tls` is kept, and not because this program makes HTTPS calls —
+# it fetches with `ureq`. Without it `sigstore`'s certificate
+# verification falls through to `ring`, and `rustls-webpki` pulls
+# `aws-lc-sys` either way: **this crate's verification path depends on a
+# C library whichever backend is chosen** (measured 2026-10-04, trying
+# to remove it). That is what stops the committed binaries being
+# byte-identical across machines, because a C library's object code
+# depends on the builder's C compiler. See CHANGELOG and SPEC-133's
+# FR-69/FR-74.
 sigstore = { version = "0.14", default-features = false, features = [
     "bundle",
     "verify",

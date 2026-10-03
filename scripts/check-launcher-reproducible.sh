@@ -1,25 +1,38 @@
 #!/usr/bin/env bash
-# The committed launcher binaries are the bytes this source builds.
+# Is the launcher's build deterministic?
 #
-# The marketplace pins a commit of this repository, and that commit
-# carries the launcher binaries. That pin is the whole reason anybody
-# should trust them — so this has to be provable, not assumed: rebuild
-# from `launcher-src/` with the release controls and compare byte for
-# byte (SPEC-133 FR-74).
+# It builds twice, from a clean output directory each time, and compares
+# the bytes. That is a real check and it is **narrower than it looks**:
+# it proves determinism on ONE machine with ONE toolchain, which is not
+# the same as the cross-machine byte-identity FR-69 asks for.
 #
-# The controls, and what each is for:
+# Why the difference is not a detail (measured 2026-10-04). The
+# committed `linux-x86_64` binary reproduced byte-for-byte twice on a
+# workstation and then DIFFERED on a CI runner. Two causes, both real:
 #
-#   --locked               the lockfile decides every version
-#   SOURCE_DATE_EPOCH      no build timestamp in the binary
-#   --remap-path-prefix    no absolute path from this machine in it
-#   musl, static           no dependency on the builder's libc
+#   1. rustc 1.98.1 locally against 1.98.0 pinned in CI. Fixed — there
+#      is a `rust-toolchain.toml` now, so everyone uses one compiler.
+#   2. `sigstore`'s certificate verification pulls a **C** library
+#      (`aws-lc-sys`, or `ring` if you try to avoid it; `rustls-webpki`
+#      brings one either way). A C library's object code depends on the
+#      builder's C compiler, so two machines with different `cc` cannot
+#      produce the same bytes. Removing it was attempted and the crate's
+#      feature graph does not allow it.
+#
+# So cross-machine byte-identity needs the C toolchain pinned too — in
+# practice, building inside a container pinned by digest. That is not
+# set up yet, which is why no launcher binary is committed: an
+# executable in a public repository that nobody else can reproduce is
+# worse than no executable at all, and the plugin cannot be installed
+# until a release exists anyway.
+#
+# `--write` puts the binaries in place for the day that container exists
+# (and for a release built inside one).
 #
 # Usage: scripts/check-launcher-reproducible.sh [--write]
-#   --write  rebuild and update the committed binaries (for a change to
-#            the launcher's source, in the same commit)
 #
 # `PLATFORMS="linux-x86_64"` limits it, for a workstation without a
-# cross-linker. CI never sets it: the point there is both platforms.
+# cross-linker. CI never sets it.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -64,17 +77,29 @@ for platform in $WANTED; do
         continue
     fi
 
-    if [[ ! -f "$committed" ]]; then
-        echo "  $committed is missing: run $0 --write" >&2
-        fail=1
-        continue
-    fi
-    if cmp -s "$built" "$committed"; then
-        echo "  $platform matches ($(wc -c < "$committed") bytes)"
+    # Keep the first build, wipe what produced it, build again.
+    first=$(mktemp)
+    cp "$built" "$first"
+    rm -f "$built"
+    rm -rf "launcher-src/target/$target/release/.fingerprint/airdress-launch-"*
+    cargo build \
+        --manifest-path launcher-src/Cargo.toml \
+        --release --locked --target "$target"
+
+    if cmp -s "$first" "$built"; then
+        echo "  $platform is deterministic here ($(wc -c < "$built") bytes, $(sha256sum "$built" | cut -c1-16)…)"
     else
-        echo "  $platform DIFFERS from a rebuild:" >&2
-        echo "    committed: $(sha256sum "$committed" | cut -d' ' -f1)" >&2
-        echo "    rebuilt:   $(sha256sum "$built" | cut -d' ' -f1)" >&2
+        echo "  $platform is NOT deterministic even on one machine:" >&2
+        echo "    first:  $(sha256sum "$first" | cut -d' ' -f1)" >&2
+        echo "    second: $(sha256sum "$built" | cut -d' ' -f1)" >&2
+        fail=1
+    fi
+    rm -f "$first"
+
+    # A committed binary nobody else can reproduce is worse than none.
+    if [[ -f "$committed" ]]; then
+        echo "  $committed is committed, and cannot be verified by anybody" >&2
+        echo "    else until the C toolchain is pinned too — see this script's header" >&2
         fail=1
     fi
 done
@@ -85,13 +110,15 @@ done
 # be checked here, and saying so is better than a check that quietly
 # covers two platforms out of three.
 echo "note: darwin-universal is compared in the release workflow, pre-signing"
+echo "note: this proves determinism on ONE machine, not across machines"
 
 if [[ $fail -ne 0 ]]; then
     cat >&2 <<'MSG'
 
-A committed launcher does not match what its source builds. Either the
-source changed without the binaries being rebuilt — run this with
---write, in the same commit — or something else is in them.
+Either the build is not deterministic even on one machine — which would
+be a new problem, since it was on 2026-10-04 — or a launcher binary is
+committed while cross-machine reproducibility is still unverifiable.
+Read this script's header before doing anything about either.
 MSG
     exit 1
 fi

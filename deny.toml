@@ -30,7 +30,23 @@ confidence-threshold = 0.9
 yanked = "deny"
 # An ignore here needs a sentence saying why the advisory does not
 # reach this code, and a date. An empty list is the resting state.
-ignore = []
+ignore = [
+    # RUSTSEC-2023-0071, 2026-10-04 — the Marvin Attack: a timing
+    # side-channel in `rsa`'s **private-key** operations, with "no safe
+    # upgrade available". It arrives through
+    # `sigstore` -> `openidconnect`, which is sigstore's OIDC code for
+    # obtaining a Fulcio certificate when SIGNING.
+    #
+    # This binary holds no private key and signs nothing. It verifies:
+    # an ECDSA or Ed25519 signature, a certificate chain, and a Rekor
+    # inclusion proof. There is no RSA private-key operation on any path
+    # it can take, so the side-channel has no secret to leak.
+    #
+    # Revisit when sigstore's verify path stops pulling
+    # `openidconnect` — removing it was attempted on 2026-10-04 and the
+    # crate's feature graph does not allow it.
+    { id = "RUSTSEC-2023-0071", reason = "a timing side-channel in RSA private-key operations; this binary performs none and holds no private key" },
+]
 
 [bans]
 multiple-versions = "allow"

@@ -100,10 +100,22 @@ cosign verify-blob \
   airdress-linux-x86_64.mcpb
 ```
 
-The launcher binaries are committed to this repository, per platform.
-That is deliberate: the marketplace pins a commit, which is what makes
-them trustworthy, and CI rebuilds them from `launcher-src/` and refuses
-a commit whose binaries differ.
+The launcher is built from `launcher-src/` in this repository, and the
+marketplace pins the commit it is built from.
+
+**No launcher binary is committed yet, on purpose.** The intent is to
+commit one per platform — the commit pin is what would make it
+trustworthy — and that only works if anybody else can rebuild the same
+bytes and check. They cannot yet: `sigstore`'s certificate verification
+pulls in a C library, and a C library's object code depends on whichever
+compiler built it, so two machines with different `cc` produce different
+binaries. (Measured: identical twice on one machine, different on a CI
+runner.) Pinning the C toolchain as well — building inside a container
+fixed by digest — is what closes that, and it is not set up.
+
+Until then CI checks what it honestly can: that the build is
+deterministic on one machine, and that no unverifiable executable has
+been committed.
 
 ### The two download origins
 

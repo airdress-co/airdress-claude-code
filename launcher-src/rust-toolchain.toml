@@ -1,0 +1,10 @@
+# One rustc for everybody.
+#
+# The committed launcher binaries diverged between a workstation on
+# 1.98.1 and CI pinned to 1.98.0 — different compiler, different bytes.
+# Pinning here means a local build, a CI build and a release build all
+# use the same one, which removes the easiest of the several reasons two
+# builds disagree.
+[toolchain]
+channel = "1.98.0"
+targets = ["x86_64-unknown-linux-musl", "aarch64-unknown-linux-musl"]
