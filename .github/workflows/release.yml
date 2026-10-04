@@ -15,6 +15,19 @@ permissions:
 env:
   # The airdress-cli tag this release builds the server from. The plugin
   # names it; a release is not reproducible if it tracks a branch.
+  #
+  # NOT YET VALID, and deliberately left wrong rather than guessed at.
+  # `v0.1.0` does not exist — airdress-cli's tags are `v0.1.0-alpha.NN`
+  # — so this workflow would have failed at checkout before compiling
+  # anything. Found 2026-10-04, the first time it was examined; it has
+  # never run.
+  #
+  # Whoever cuts the first release sets this to a tag that CONTAINS the
+  # keyring fix (airdress-cli `de4c63f`, "Secret Service on glibc
+  # only"). Without it the Linux server cannot be built at all, so an
+  # earlier tag would reintroduce the failure this workflow was just
+  # repaired for. The step below refuses rather than letting a stale or
+  # absent tag look like a build problem.
   CLI_TAG: v0.1.0
 
 jobs:
@@ -64,19 +77,49 @@ jobs:
           ref: ${{ env.CLI_TAG }}
           path: airdress-cli
 
+      # Say which thing is wrong. A missing tag otherwise surfaces as a
+      # checkout failure that reads like a permissions problem.
+      - name: The pinned CLI tag exists and carries the keyring fix
+        working-directory: airdress-cli
+        run: |
+          set -euo pipefail
+          echo "building the server from airdress-cli ${{ env.CLI_TAG }}"
+          git rev-parse -q --verify "HEAD" >/dev/null
+          # The commit that scoped keyring's Secret Service feature to
+          # glibc. Without it `cargo build --target *-linux-musl` dies
+          # in libdbus-sys' build script, on x86_64 as well as aarch64.
+          if ! git merge-base --is-ancestor de4c63f HEAD 2>/dev/null; then
+            echo "::error::${{ env.CLI_TAG }} predates the keyring fix (de4c63f)."
+            echo "The Linux server cannot be built from it: keyring's"
+            echo "sync-secret-service needs libdbus for the target, and"
+            echo "there is none for musl. Pick a later tag."
+            exit 1
+          fi
+
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: "1.98.0"
           targets: ${{ matrix.target == 'universal-apple-darwin' && 'x86_64-apple-darwin,aarch64-apple-darwin' || matrix.target }}
 
-      - name: Linux build dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y musl-tools libdbus-1-dev pkg-config
-          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-musl" ]; then
-            sudo apt-get install -y gcc-aarch64-linux-gnu
-          fi
+      # No apt packages for the Linux targets: the C toolchain comes from
+      # a digest-pinned image, the same ones the launcher is built in
+      # (launcher-src/toolchain-images.json).
+      #
+      # What the apt line could not do, measured 2026-10-04 the first
+      # time this workflow was ever exercised:
+      #
+      #   * `gcc-aarch64-linux-gnu` targets GLIBC, so
+      #     aarch64-unknown-linux-musl had no correct linker and the
+      #     build failed whatever else was installed;
+      #   * `libdbus-1-dev` is the host's, and `keyring`'s
+      #     sync-secret-service wanted libdbus FOR THE TARGET, so
+      #     x86_64-unknown-linux-musl died in libdbus-sys' build script
+      #     too. That half is fixed in airdress-cli, which now scopes
+      #     the feature to glibc.
+      #
+      # Pinning the compiler is also what makes the bytes comparable
+      # between the two passes below on different runner images: a C
+      # dependency compiled by two different `cc` cannot match.
 
       - name: Build the server
         working-directory: airdress-cli
@@ -91,6 +134,10 @@ jobs:
           export SOURCE_DATE_EPOCH
           export RUSTFLAGS="--remap-path-prefix=$PWD=/airdress-cli --remap-path-prefix=$HOME/.cargo=/cargo"
           if [ "${{ matrix.target }}" = "universal-apple-darwin" ]; then
+            # macOS builds natively. Apple's toolchain cannot be pinned
+            # by digest, so the evidence here is the two passes on two
+            # runner versions and nothing stronger; that asymmetry is
+            # stated in the README rather than left to be noticed.
             for t in x86_64-apple-darwin aarch64-apple-darwin; do
               cargo build --release --locked -p airdress-mcp --target "$t"
             done
@@ -98,9 +145,35 @@ jobs:
               target/x86_64-apple-darwin/release/airdress-mcp \
               target/aarch64-apple-darwin/release/airdress-mcp
           else
-            export RUSTFLAGS="$RUSTFLAGS -C target-feature=+crt-static"
-            cargo build --release --locked -p airdress-mcp --target ${{ matrix.target }}
-            cp target/${{ matrix.target }}/release/airdress-mcp airdress-mcp
+            # Linux, inside the pinned image. The source is copied in so
+            # the remapped prefix does not depend on where the checkout
+            # sits, and the artefacts are chowned back or an
+            # unprivileged runner cannot clean up after a root
+            # container — which once turned a passing build red.
+            image=$(python3 -c '
+            import json, sys
+            d = json.load(open("../launcher-src/toolchain-images.json"))
+            for p in d["platforms"].values():
+                if p["target"] == sys.argv[1]:
+                    print(p["image"]); break
+            ' "${{ matrix.target }}")
+            [ -n "$image" ] || { echo "no pinned image for ${{ matrix.target }}" >&2; exit 1; }
+            case "$image" in *@sha256:*) ;; *) echo "image not digest-pinned: $image" >&2; exit 1 ;; esac
+            echo "building in $image"
+            docker run --rm \
+              -v "$PWD":/src:ro -v "$PWD/out":/out \
+              -e CARGO_TARGET_DIR=/out/target -e CARGO_INCREMENTAL=0 \
+              -e SOURCE_DATE_EPOCH="$SOURCE_DATE_EPOCH" \
+              -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+              "$image" bash -lc "
+                set -euo pipefail
+                mkdir -p /work && cp -r /src/. /work/ && cd /work
+                export RUSTFLAGS='--remap-path-prefix=/work=/airdress-cli --remap-path-prefix=/root/.cargo=/cargo -C target-feature=+crt-static'
+                cargo build --release --locked -p airdress-mcp --target ${{ matrix.target }}
+                cp /out/target/${{ matrix.target }}/release/airdress-mcp /out/airdress-mcp
+                chown -R \"\$HOST_UID:\$HOST_GID\" /out
+              "
+            cp out/airdress-mcp airdress-mcp
           fi
           shasum -a 256 airdress-mcp
 
