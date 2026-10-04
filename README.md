@@ -196,7 +196,10 @@ cmp committed rebuilt
 
 `macho-unsigned.py` removes the signature and zeroes one field codesign
 leaves behind (`__LINKEDIT`'s size in memory, not code or data); its
-header says why. CI makes that comparison on every pull request, and the
+header says why. Run both halves on **one** Mac: `codesign
+--remove-signature` itself differs between macOS versions (measured: the
+same file gave two different results on `macos-15` and `macos-26`), so
+the signature-aside hash means something only beside its own pair. CI makes that comparison on every pull request, and the
 signing workflow makes it before handing a signed binary back.
 
 **Until the Developer ID certificate exists, the committed launcher has
