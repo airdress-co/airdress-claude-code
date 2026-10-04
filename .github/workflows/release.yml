@@ -16,19 +16,18 @@ env:
   # The airdress-cli tag this release builds the server from. The plugin
   # names it; a release is not reproducible if it tracks a branch.
   #
-  # NOT YET VALID, and deliberately left wrong rather than guessed at.
-  # `v0.1.0` does not exist — airdress-cli's tags are `v0.1.0-alpha.NN`
-  # — so this workflow would have failed at checkout before compiling
-  # anything. Found 2026-10-04, the first time it was examined; it has
-  # never run.
+  # It used to say `v0.1.0`, and no such tag exists — airdress-cli's tags
+  # are `v0.1.0-alpha.NN` — so this workflow would have failed at
+  # checkout before compiling anything. Found 2026-10-04, the first time
+  # it was examined; it had never run.
   #
-  # Whoever cuts the first release sets this to a tag that CONTAINS the
-  # keyring fix (airdress-cli `de4c63f`, "Secret Service on glibc
-  # only"). Without it the Linux server cannot be built at all, so an
-  # earlier tag would reintroduce the failure this workflow was just
-  # repaired for. The step below refuses rather than letting a stale or
-  # absent tag look like a build problem.
-  CLI_TAG: v0.1.0
+  # `v0.1.0-alpha.32` is the first tag that carries the keyring fix
+  # (airdress-cli `de4c63f`, "Secret Service on glibc only"). Without it
+  # airdress-mcp cannot be built for musl at all, so an earlier tag
+  # reintroduces the failure this workflow was repaired for — which is
+  # what the step below refuses, rather than letting a stale or absent
+  # tag look like a build problem.
+  CLI_TAG: v0.1.0-alpha.32
 
 jobs:
   # Two builds, in two jobs, on two runner images, with no shared cache.
