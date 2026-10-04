@@ -52,7 +52,15 @@
 # whole exercise exists to avoid.
 set -euo pipefail
 
-cd "$(git rev-parse --show-toplevel)"
+# Say which of the two things is wrong rather than letting an empty
+# `cd` do it: an unset PATH on a build host produced
+# "cd: null directory", which names neither git nor the repository.
+command -v git >/dev/null 2>&1 || { echo "git is not on PATH" >&2; exit 1; }
+ROOT_DIR=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    echo "not inside a git repository, so there is no tree to build" >&2
+    exit 1
+}
+cd "$ROOT_DIR"
 
 WRITE=0
 [[ "${1:-}" == "--write" ]] && WRITE=1
@@ -100,7 +108,21 @@ fi
 EPOCH=$(git log -1 --pretty=%ct 2>/dev/null || echo 1700000000)
 
 WORK=$(mktemp -d)
-trap 'rm -rf "$WORK"' EXIT
+
+# The container builds as root and writes into this host directory, so
+# without handing ownership back an unprivileged caller cannot delete it.
+# That is not a tidiness problem: the first version left `rm -rf` as the
+# EXIT trap's last command, so its "Permission denied" became the
+# script's exit status and a run whose hashes BOTH matched reported
+# failure. The chown happens inside each container, below; the trap now
+# reports a cleanup it could not do instead of failing over it, because
+# leftover scratch is worth a warning and never worth a false red.
+cleanup() {
+    local code=$?
+    rm -rf "$WORK" 2>/dev/null || echo "note: could not remove $WORK" >&2
+    return "$code"
+}
+trap cleanup EXIT
 
 status=0
 for platform in "${WANTED[@]}"; do
@@ -132,6 +154,8 @@ for platform in "${WANTED[@]}"; do
             -e CARGO_TARGET_DIR=/out/target \
             -e CARGO_INCREMENTAL=0 \
             -e SOURCE_DATE_EPOCH="$EPOCH" \
+            -e HOST_UID="$(id -u)" \
+            -e HOST_GID="$(id -g)" \
             "$image" bash -lc "
                 set -euo pipefail
                 mkdir -p /work && cp -r /src/. /work/
@@ -139,6 +163,10 @@ for platform in "${WANTED[@]}"; do
                 export RUSTFLAGS='--remap-path-prefix=/work=/plugin --remap-path-prefix=/root/.cargo=/cargo'
                 cargo build --release --locked --target $target >/dev/null
                 cp /out/target/$target/release/airdress-launch /out/airdress-launch
+                # Hand the artefacts back, or the caller cannot clean up
+                # after us. Not --user on the run: these images expect to
+                # be root (CARGO_HOME lives under /root).
+                chown -R \"\$HOST_UID:\$HOST_GID\" /out
             " || { echo "   pass $pass FAILED" >&2; status=1; continue 2; }
         hashes+=("$(sha256sum "$out/airdress-launch" | cut -d' ' -f1)")
         echo "   pass $pass  ${hashes[-1]}"
