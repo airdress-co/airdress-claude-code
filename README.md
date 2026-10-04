@@ -127,7 +127,7 @@ All three launchers are committed, and you can check them:
 
 ```sh
 scripts/build-launchers.sh          # Linux; needs docker, podman or nerdctl
-scripts/build-launcher-macos.sh     # macOS; needs Xcode 26.4
+scripts/build-launcher-macos.sh     # macOS; needs Xcode 26.3 (17C529)
 ```
 
 It builds inside a toolchain image pinned by digest in
@@ -140,7 +140,7 @@ a build that only reproduces in one place fails.
 | --- | --- | --- |
 | `linux-x86_64` | `18ac3d9adcbb3fb0098965917890ede9c0134d584ce84d7308ca1b03512f1175` | yes, in its pinned image |
 | `linux-aarch64` | `c7f780812b52524cae0171f2d38aea43f001a50d352cb05766f082df613b4277` | yes, in its pinned image |
-| `darwin-universal` | `7d2de6bd3af9b027d0c43ce3598022179b10a7c68ab0d85d3ab466725998ac7a` | only with Xcode 26.4 — weaker than an image: two machines agreeing, not a pinned toolchain |
+| `darwin-universal` | `caef1566920b57df394767382993abe875a96322aed25abae8bcf9daa26c4e12` | only with Xcode 26.3 (17C529) — weaker than an image: two machines agreeing, not a pinned toolchain |
 
 **Why the C toolchain has to be pinned.** `sigstore`'s certificate
 verification reaches a C library (`aws-lc-sys`) by three independent
@@ -160,14 +160,16 @@ worth saying which one it is.
 
 **macOS gets weaker evidence, and that is a real gap.** Apple's
 toolchain cannot be pinned by digest, so `darwin-universal` cannot get
-the Linux guarantee. What it has instead: the hash above was produced on
-one Mac, twice — the second time from another checkout path with a cargo
-home of its own — and CI rebuilds it separately on two macOS runner
-versions with the same Xcode selected by name, and fails unless both
-match it. The
-Xcode is the pin that remains — its compiler builds `aws-lc`'s C and its
-SDK version is written into the binary — so another Xcode is expected to
-give another hash, and that is a toolchain change, not a fault.
+the Linux guarantee. What it has instead: CI builds it separately on two
+macOS runner versions (`macos-15` and `macos-26`) with the same Xcode
+selected by version and build, and fails unless the two are
+byte-identical with each other and with what is committed. The build
+also takes no path from the machine it runs on: a second checkout, a
+second cargo home and the Rust toolchain moved elsewhere all give the
+same bytes. The Xcode is the pin that remains — its compiler builds
+`aws-lc`'s C, its linker writes the load commands and its SDK version is
+written into the binary — so another Xcode gives another hash (26.4 and
+26.4.1 already did), and that is a toolchain change, not a fault.
 
 The macOS launcher is one universal binary (`x86_64` and `arm64`) with
 the linker's ad-hoc signature and **no Developer ID signature**. A
