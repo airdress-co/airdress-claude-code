@@ -103,19 +103,49 @@ cosign verify-blob \
 The launcher is built from `launcher-src/` in this repository, and the
 marketplace pins the commit it is built from.
 
-**No launcher binary is committed yet, on purpose.** The intent is to
-commit one per platform — the commit pin is what would make it
-trustworthy — and that only works if anybody else can rebuild the same
-bytes and check. They cannot yet: `sigstore`'s certificate verification
-pulls in a C library, and a C library's object code depends on whichever
-compiler built it, so two machines with different `cc` produce different
-binaries. (Measured: identical twice on one machine, different on a CI
-runner.) Pinning the C toolchain as well — building inside a container
-fixed by digest — is what closes that, and it is not set up.
+### Rebuilding the launcher yourself
 
-Until then CI checks what it honestly can: that the build is
-deterministic on one machine, and that no unverifiable executable has
-been committed.
+The Linux launchers are committed, and you can check them:
+
+```sh
+scripts/build-launchers.sh          # needs docker, podman or nerdctl
+```
+
+It builds inside a toolchain image pinned by digest in
+`launcher-src/toolchain-images.json`, and the result should be
+byte-identical to what is committed. CI does the same on every pull
+request and compares against hashes produced on a different machine, so
+a build that only reproduces in one place fails.
+
+| Platform | SHA-256 | Reproduces |
+| --- | --- | --- |
+| `linux-x86_64` | `18ac3d9adcbb3fb0098965917890ede9c0134d584ce84d7308ca1b03512f1175` | yes, in its pinned image |
+| `linux-aarch64` | `c7f780812b52524cae0171f2d38aea43f001a50d352cb05766f082df613b4277` | yes, in its pinned image |
+| `darwin-universal` | — | **not yet committed** |
+
+**Why the C toolchain has to be pinned.** `sigstore`'s certificate
+verification reaches a C library (`aws-lc-sys`) by three independent
+routes, and a C library's object code depends on whichever compiler
+built it — so pinning `rustc` alone is not enough, and two machines with
+different `cc` produce different binaries. Measured: identical twice on
+one machine, different on a CI runner. The image pins `cc`; `rustc`
+still comes from `rust-toolchain.toml`, so the image's own Rust version
+is irrelevant.
+
+**What that claim is, exactly.** These bytes are what *this toolchain
+image* produces from this source, on any machine that can run it. It is
+not a claim that the toolchain itself is derivable from source: it rests
+on the registry still serving that digest. That is weaker than full
+bootstrappable provenance and stronger than "trust our CI", and it is
+worth saying which one it is.
+
+**macOS is not covered, and that is a real gap.** Apple's toolchain
+cannot be pinned by digest, so `darwin-universal` cannot get the same
+guarantee. It will be built on macOS runners with two passes on two
+runner versions — the evidence the server release already uses — and
+until then no macOS launcher is committed, so the plugin refuses to
+start there with a message saying so rather than running something
+unverified.
 
 ### The two download origins
 

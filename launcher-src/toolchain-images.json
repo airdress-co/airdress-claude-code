@@ -1,0 +1,17 @@
+{
+  "_why": "The launcher's bytes depend on the C compiler that builds aws-lc-sys, so the compiler has to be pinned as tightly as the Rust one. These are digests, never tags: a tag moves and would move the bytes with it. Only the C toolchain comes from the image -- rust-toolchain.toml still decides rustc, which the image's own Rust does not affect.",
+  "_measured": "2026-10-04 on a second internal machine (Docker 28.5.2). aarch64-unknown-linux-musl built twice, byte-identical: c7f780812b52524cae0171f2d38aea43f001a50d352cb05766f082df613b4277. That target had never built at all before: aws-lc-sys needs cmake and libclang as well as a musl cross compiler, and the previous release workflow installed gcc-aarch64-linux-gnu plus musl-tools, which satisfies none of the three.",
+  "_bumping": "Pull the tag, read the new digest, change it here, and run scripts/build-launchers.sh. Expect every launcher hash to change; that is the point of the pin, not a fault. Record the new hashes in the same commit.",
+  "platforms": {
+    "linux-x86_64": {
+      "target": "x86_64-unknown-linux-musl",
+      "image": "messense/rust-musl-cross@sha256:ce75e9174325d4fbb3de85c309e2d7ca29f7500169bc4b5d2c611ff7e86d549a",
+      "tag_when_pinned": "messense/rust-musl-cross:x86_64-musl"
+    },
+    "linux-aarch64": {
+      "target": "aarch64-unknown-linux-musl",
+      "image": "messense/rust-musl-cross@sha256:ecae5dd62d1c938c14f8071d36c16fa699860aace03bfb5284fb1216474d2643",
+      "tag_when_pinned": "messense/rust-musl-cross:aarch64-musl"
+    }
+  }
+}

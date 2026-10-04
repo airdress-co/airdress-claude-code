@@ -156,35 +156,66 @@ jobs:
           rm -f cargo-deny "$tarball"
 
   reproducible:
-    name: The launcher build is deterministic
-    timeout-minutes: 25
+    name: The launcher reproduces in its pinned toolchain
+    timeout-minutes: 45
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: "1.98.0"
-          targets: x86_64-unknown-linux-musl
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: launcher-src
-      - run: sudo apt-get update -qq && sudo apt-get install -y musl-tools
 
-      # x86_64 only, and that is a known gap rather than a choice.
+      # Both Linux platforms, inside the digest-pinned images named in
+      # launcher-src/toolchain-images.json. Docker is already on the
+      # runner, so there is nothing to install — and nothing to install
+      # is the point: the C toolchain comes from the image, which is
+      # what makes two machines agree.
       #
-      # `aws-lc-sys` — the C library sigstore's verification pulls in —
-      # needs an aarch64 **musl** C compiler to cross-compile.
-      # `musl-tools` provides x86_64 only and `gcc-aarch64-linux-gnu` is
-      # the wrong libc, so the aarch64 build fails in its build script
-      # (measured 2026-10-04). The same C dependency is why the bytes
-      # are not reproducible across machines.
+      # This replaces a job that built x86_64 only with the runner's own
+      # `musl-tools`. That job proved determinism on one machine, which
+      # is strictly weaker than FR-69 asks, and it could not build
+      # aarch64 at all: `aws-lc-sys` wants cmake and libclang as well as
+      # a musl cross compiler, and `musl-tools` + `gcc-aarch64-linux-gnu`
+      # supplies none of the three.
+      # ONE pass per platform, compared against hashes another machine
+      # produced from the same pinned images. That is deliberately not
+      # the same as building twice here: a second pass on one runner
+      # proves determinism, while matching the other machine's bytes proves the
+      # thing FR-69 actually asks for — that somebody else can rebuild
+      # the committed binary and get what is committed.
       #
-      # Both are the same root cause and the same fix: build inside a
-      # container pinned by digest that carries both musl cross
-      # toolchains. Until that exists this job proves what it can — that
-      # the x86_64 build is deterministic — and the release workflow is
-      # where aarch64 and macOS have to be solved.
-      - name: Build twice and compare
+      # Recorded 2026-10-04 on a second machine (Docker 28.5.2), both platforms
+      # built twice there, byte-identical each time. When the launcher
+      # source or a pinned image changes these must change in the same
+      # commit; `scripts/build-launchers.sh` prints the new values, and
+      # a pin bump is expected to move every hash.
+      - name: The bytes match what another machine produced
         env:
-          PLATFORMS: linux-x86_64
-        run: scripts/check-launcher-reproducible.sh
+          PASSES: "1"
+        run: |
+          set -euo pipefail
+          scripts/build-launchers.sh --write
+          declare -A expected=(
+            [linux-x86_64]=18ac3d9adcbb3fb0098965917890ede9c0134d584ce84d7308ca1b03512f1175
+            [linux-aarch64]=c7f780812b52524cae0171f2d38aea43f001a50d352cb05766f082df613b4277
+          )
+          fail=0
+          for platform in "${!expected[@]}"; do
+            got=$(sha256sum "plugins/airdress/launcher/$platform/airdress-launch" | cut -d" " -f1)
+            if [ "$got" != "${expected[$platform]}" ]; then
+              echo "::error::$platform does not match the recorded cross-machine hash"
+              echo "  recorded elsewhere:  ${expected[$platform]}"
+              echo "  built on this runner:  $got"
+              fail=1
+            else
+              echo "$platform matches: $got"
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
+      # The committed binaries must BE the ones just built. If they are
+      # not, somebody edited the source without rebuilding, and the
+      # plugin would ship a launcher nobody can reproduce.
+      - name: The committed launchers are the reproduced ones
+        run: git diff --exit-code -- plugins/airdress/launcher || {
+            echo "::error::the committed launchers differ from a fresh reproducible build";
+            echo "Run scripts/build-launchers.sh --write and commit the result.";
+            exit 1;
+          }
