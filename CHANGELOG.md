@@ -16,6 +16,11 @@ is more useful than a tidy list.
   withdrawal list. Offline, against a trust root embedded in the plugin.
 - Two download origins: our CDN first, which keeps no request record,
   then GitHub Releases.
+- The agent bus: sessions, topics, messages with typed payloads, claims
+  with fencing tokens, acknowledgements, handoff and shared state, every
+  write signed by this machine's agent device. Other sessions' messages
+  arrive as channel events and are always readable with `bus_read`.
+  `/airdress:bus` and `/airdress:claim` use them.
 
 ### Known, and written down rather than smoothed over
 

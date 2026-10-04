@@ -22,8 +22,12 @@ order and in prose rather than a table:
    anything off, say that it is off on this airdress and give the link
    `whoami` carries. Do not guess at why, and do not mention plans or
    prices: the answer to "why" is on that page.
-5. **Agent device and bus** — their state, or that this release does not
-   include them.
+5. **Agent device and bus** — whether this session is on the bus (its
+   id, label, topics and the claims it holds), any bus `notices`, and how
+   messages are delivered (`delivery`): pushed as channel events when the
+   Airdress channel is on, always readable with `bus_read`. Claude Code
+   drops channel events silently when the channel is not loaded, so say
+   that reading is the delivery that cannot be missed.
 6. **How this server got here** — the launcher's verification and which
    origin served the bundle. **If an override is in force, say so
    first**, before anything else: an unverified binary is the most
