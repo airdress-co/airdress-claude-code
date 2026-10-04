@@ -104,9 +104,16 @@ trap cleanup EXIT
 #     (/Users/<name>/.cargo/...). CFLAGS remaps them the same way.
 #   * Archive dates. `ar` stamps each member's mtime; ZERO_AR_DATE
 #     makes Apple's ar write zero instead.
-#   * One build directory. Object paths reach the linker as given, and
-#     no flag remaps them, so every build uses the same absolute path.
-#     /tmp is the same on every Mac; $TMPDIR is per user.
+#   * No debug map at link time. ld computes the UUID over its output
+#     BEFORE cargo strips it, and that output still holds a debug map
+#     naming every input by absolute path — the build directory, the
+#     Rust toolchain under ~/.rustup, the SDK. Stripping removes the
+#     map and keeps the UUID. Measured: the toolchain copied to another
+#     path moved exactly those 48 bytes again, and `-Wl,-S`, which tells
+#     ld not to write the map at all, made the two builds identical.
+#   * One build directory anyway. With the map gone it should no longer
+#     matter, and it costs nothing to keep. /tmp is the same on every
+#     Mac; $TMPDIR is per user.
 BUILD_DIR=/tmp/airdress-launch-macos
 export ZERO_AR_DATE=1
 
@@ -134,7 +141,7 @@ for pass in "${passes[@]}"; do
     export CARGO_HOME="$cargo_home"
     export CARGO_TARGET_DIR="$BUILD_DIR"
     prefix_maps="$src_root=/plugin $cargo_home=/cargo $BUILD_DIR=/target"
-    RUSTFLAGS=""
+    RUSTFLAGS="-C link-arg=-Wl,-S"
     CFLAGS=""
     for map in $prefix_maps; do
         RUSTFLAGS="$RUSTFLAGS --remap-path-prefix=$map"
