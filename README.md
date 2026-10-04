@@ -182,14 +182,28 @@ same bytes. The Xcode is the pin that remains — its compiler builds
 written into the binary — so another Xcode gives another hash (26.4 and
 26.4.1 already did), and that is a toolchain change, not a fault.
 
-The macOS launcher is one universal binary (`x86_64` and `arm64`) with
-the linker's ad-hoc signature and **no Developer ID signature**. A
-plugin installed through Claude Code is not quarantined, so Gatekeeper
-never assesses it and it runs as committed. Copied out of a browser
-download instead, it would be quarantined, and macOS would stop it with
-a dialog that an editor running it in the background never shows — so
-install it through the marketplace, or clear the attribute with
-`xattr -d com.apple.quarantine` after checking the hash.
+The macOS launcher is one universal binary (`x86_64` and `arm64`),
+**signed with a Developer ID and notarized by Apple**, so macOS runs it
+even from a quarantined copy. A signature cannot be rebuilt — it holds
+Apple's timestamp — so the rebuild check compares without it:
+
+```sh
+scripts/build-launcher-macos.sh                       # with Xcode 26.3 (17C529)
+scripts/macho-unsigned.py plugins/airdress/launcher/darwin-universal/airdress-launch committed
+scripts/macho-unsigned.py <the binary you built> rebuilt
+cmp committed rebuilt
+```
+
+`macho-unsigned.py` removes the signature and zeroes one field codesign
+leaves behind (`__LINKEDIT`'s size in memory, not code or data); its
+header says why. CI makes that comparison on every pull request, and the
+signing workflow makes it before handing a signed binary back.
+
+**Until the Developer ID certificate exists, the committed launcher has
+only the linker's ad-hoc signature.** Installed through Claude Code it
+runs anyway, because the plugin is never quarantined. A copy from a
+browser download would be, and macOS would stop it with a dialog that an
+editor running it in the background never shows.
 
 ### The two download origins
 

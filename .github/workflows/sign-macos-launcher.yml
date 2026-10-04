@@ -1,0 +1,92 @@
+name: Sign the macOS launcher
+
+# Builds the macOS launcher on two runner versions, signs it with the
+# Developer ID and notarizes it, and hands back the signed binary as an
+# artifact. A person commits it (owner decision, 2026-10-05): the
+# signing secrets never get a token that can write to the repository.
+#
+# Run it on the branch whose launcher source you want signed, after any
+# change under launcher-src/ or to the build. Then:
+#
+#   gh run download <run> -n airdress-launch-signed
+#   install -m 0755 airdress-launch plugins/airdress/launcher/darwin-universal/
+#
+# and commit. CI then holds the committed binary to a fresh build with
+# the signature aside (macos-launcher-build.yml).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sign-macos-launcher-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    uses: ./.github/workflows/macos-launcher-build.yml
+
+  sign:
+    name: Sign and notarize
+    needs: build
+    timeout-minutes: 30
+    runs-on: macos-26
+    # The Apple secrets live in this environment only, so no other job —
+    # and no pull request's own workflow — can read them.
+    environment: apple-signing
+    steps:
+      - uses: actions/checkout@v4
+
+      # Both runners agreed (the build workflow's compare job), so
+      # either copy is the build.
+      - uses: actions/download-artifact@v4
+        with:
+          name: launcher-darwin-universal-macos-26
+          path: unsigned
+
+      - name: Sign and notarize
+        env:
+          APPLE_CERT_P12: ${{ secrets.APPLE_CERT_P12 }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_SIGNING_IDENTITY: ${{ vars.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_KEY_ID: ${{ vars.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ vars.APPLE_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p signed
+          cp unsigned/airdress-launch signed/airdress-launch
+          scripts/sign-macos.sh signed/airdress-launch
+
+      # The claim CI makes about the committed binary, made here first:
+      # signature aside, it is the build both runners produced. If a
+      # codesign changes more than scripts/macho-unsigned.py removes,
+      # this is where that shows, before anybody commits anything.
+      - name: Signature aside, it is the build
+        run: |
+          set -euo pipefail
+          scripts/macho-unsigned.py unsigned/airdress-launch "$RUNNER_TEMP/unsigned.form"
+          scripts/macho-unsigned.py signed/airdress-launch "$RUNNER_TEMP/signed.form"
+          cmp "$RUNNER_TEMP/unsigned.form" "$RUNNER_TEMP/signed.form" || {
+            echo "::error::signing changed more than the signature and __LINKEDIT's vmsize"
+            exit 1
+          }
+          codesign -dv --verbose=2 signed/airdress-launch 2>&1 | grep -E "Authority|TeamIdentifier|flags"
+          {
+            echo "### Signed macOS launcher"
+            echo
+            echo "| | SHA-256 |"
+            echo "| --- | --- |"
+            echo "| signed (commit this) | \`$(shasum -a 256 signed/airdress-launch | cut -d' ' -f1)\` |"
+            echo "| built, as both runners produced it | \`$(shasum -a 256 unsigned/airdress-launch | cut -d' ' -f1)\` |"
+            echo "| either, signature aside | \`$(shasum -a 256 "$RUNNER_TEMP/signed.form" | cut -d' ' -f1)\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: airdress-launch-signed
+          path: signed/airdress-launch
+          if-no-files-found: error

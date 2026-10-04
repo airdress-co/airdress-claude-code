@@ -235,92 +235,12 @@ jobs:
             exit 1;
           }
 
+  # The macOS launcher, on two runner versions, held to what is
+  # committed with the signature aside. The steps live in
+  # macos-launcher-build.yml so the signing workflow builds it the same
+  # way.
   reproducible-macos:
-    name: The macOS launcher reproduces (${{ matrix.runner }})
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        # Two runner versions, because there is no digest to pin and
-        # this is the evidence that remains: two different machines,
-        # each building once, agreeing with each other and with what is
-        # committed.
-        runner: [macos-15, macos-26]
-    runs-on: ${{ matrix.runner }}
-    env:
-      # The newest Xcode BOTH images carry, by version and build.
-      # clang compiles aws-lc's C, ld writes the load commands and the
-      # SDK version is stamped into LC_BUILD_VERSION, so another Xcode
-      # is expected to give other bytes — 26.4 (17E192) and 26.4.1
-      # (17E202) already did. macos-15 stops at 26.3; macos-26 has it as
-      # well. Moving this pin moves the hash, in the same commit.
-      XCODE_VERSION: "26.3"
-      XCODE_BUILD: "17C529"
-    steps:
-      - uses: actions/checkout@v4
-
-      # Refuse a missing or different Xcode rather than build with the
-      # default and report a mismatch that is really a toolchain change.
-      - name: Select the pinned Xcode
-        run: |
-          set -euo pipefail
-          app="/Applications/Xcode_${XCODE_VERSION}.app"
-          if [ ! -d "$app" ]; then
-            echo "::error::Xcode ${XCODE_VERSION} is not on ${{ matrix.runner }}"
-            ls -d /Applications/Xcode*.app >&2
-            exit 1
-          fi
-          sudo xcode-select -s "$app"
-          xcodebuild -version
-          build=$(xcodebuild -version | awk '/Build version/{print $3}')
-          if [ "$build" != "$XCODE_BUILD" ]; then
-            echo "::error::$app is build $build, not ${XCODE_BUILD}"
-            exit 1
-          fi
-
-      # rustup reads launcher-src/rust-toolchain.toml; the script adds
-      # the two Apple targets for that compiler itself.
-      - name: Build once
-        env:
-          PASSES: "1"
-        run: |
-          set -euo pipefail
-          scripts/build-launcher-macos.sh --write
-          shasum -a 256 plugins/airdress/launcher/darwin-universal/airdress-launch
-
-      # Uploaded whether or not it matches: a mismatch is read by
-      # comparing the bytes, and that needs the bytes.
-      - uses: actions/upload-artifact@v4
-        with:
-          name: launcher-darwin-universal-${{ matrix.runner }}
-          path: plugins/airdress/launcher/darwin-universal/airdress-launch
-          if-no-files-found: error
-
-      - name: The committed launcher is the reproduced one
-        run: git diff --exit-code -- plugins/airdress/launcher/darwin-universal || {
-            echo "::error::the committed macOS launcher differs from a fresh build with Xcode ${XCODE_VERSION}";
-            echo "Run scripts/build-launcher-macos.sh --write with that Xcode and commit the result.";
-            exit 1;
-          }
-
-  reproducible-macos-compare:
-    name: The two macOS runners agree
-    needs: reproducible-macos
-    if: always()
-    timeout-minutes: 5
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: launcher-darwin-universal-*
-          path: builds
-      - name: Byte-identical
-        run: |
-          set -euo pipefail
-          a=builds/launcher-darwin-universal-macos-15/airdress-launch
-          b=builds/launcher-darwin-universal-macos-26/airdress-launch
-          sha256sum "$a" "$b"
-          cmp "$a" "$b" || {
-            echo "::error::macos-15 and macos-26 built different bytes with the same Xcode"
-            exit 1
-          }
+    name: The macOS launcher reproduces
+    uses: ./.github/workflows/macos-launcher-build.yml
+    with:
+      check-committed: true

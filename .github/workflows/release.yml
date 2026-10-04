@@ -227,6 +227,8 @@ jobs:
     needs: compare
     timeout-minutes: 45
     runs-on: macos-15
+    # The Apple secrets live in this environment only.
+    environment: apple-signing
     permissions:
       # cosign keyless signing, and the provenance attestation.
       id-token: write
@@ -245,9 +247,9 @@ jobs:
         env:
           APPLE_CERT_P12: ${{ secrets.APPLE_CERT_P12 }}
           APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
-          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+          APPLE_SIGNING_IDENTITY: ${{ vars.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_KEY_ID: ${{ vars.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ vars.APPLE_API_ISSUER_ID }}
           APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
         run: scripts/sign-macos.sh builds/server-darwin-universal-A/airdress-mcp
 
