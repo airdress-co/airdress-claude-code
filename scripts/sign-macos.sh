@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# Developer ID signature and notarization for the macOS server.
+# Developer ID signature and notarization, for the macOS server and the
+# macOS launcher alike.
 #
-# Reproducibility is checked on the PRE-SIGNING bytes, in the compare
-# job, because signing and notarization change them. Anybody can strip
-# the signature and compare for themselves, which is the honest version
+# Reproducibility is checked on the PRE-SIGNING bytes, because signing
+# and notarization change them. Anybody can strip the signature and
+# compare for themselves — scripts/macho-unsigned.py, which also says
+# the one field codesign leaves behind — and that is the honest version
 # of "reproducible on macOS".
 #
-# Usage: scripts/sign-macos.sh <path to the universal airdress-mcp>
+# Usage: scripts/sign-macos.sh <path to a universal binary>
 set -euo pipefail
 
 binary="${1:?usage: $0 <binary>}"
@@ -43,7 +45,7 @@ key=$(mktemp).p8
 echo "$APPLE_API_KEY_P8" | base64 --decode > "$key"
 
 # notarytool takes an archive, not a bare binary.
-archive=$(mktemp -d)/airdress-mcp.zip
+archive=$(mktemp -d)/$(basename "$binary").zip
 ditto -c -k --keepParent "$binary" "$archive"
 xcrun notarytool submit "$archive" \
     --key "$key" \
