@@ -104,12 +104,10 @@ for platform in $WANTED; do
     fi
 done
 
-# macOS is built and compared in the release workflow, on a macOS
-# runner, before signing — signing and notarization change the bytes, so
-# reproducibility is checked on the pre-signing binary (FR-76). It cannot
-# be checked here, and saying so is better than a check that quietly
-# covers two platforms out of three.
-echo "note: darwin-universal is compared in the release workflow, pre-signing"
+# macOS is built by scripts/build-launcher-macos.sh and compared in CI
+# on two macOS runner versions. It cannot be checked here, and saying so
+# is better than a check that quietly covers two platforms out of three.
+echo "note: darwin-universal is checked by scripts/build-launcher-macos.sh, on a Mac"
 echo "note: this proves determinism on ONE machine, not across machines"
 
 if [[ $fail -ne 0 ]]; then
