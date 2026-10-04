@@ -123,10 +123,11 @@ marketplace pins the commit it is built from.
 
 ### Rebuilding the launcher yourself
 
-The Linux launchers are committed, and you can check them:
+All three launchers are committed, and you can check them:
 
 ```sh
-scripts/build-launchers.sh          # needs docker, podman or nerdctl
+scripts/build-launchers.sh          # Linux; needs docker, podman or nerdctl
+scripts/build-launcher-macos.sh     # macOS; needs Xcode 26.4
 ```
 
 It builds inside a toolchain image pinned by digest in
@@ -139,7 +140,7 @@ a build that only reproduces in one place fails.
 | --- | --- | --- |
 | `linux-x86_64` | `18ac3d9adcbb3fb0098965917890ede9c0134d584ce84d7308ca1b03512f1175` | yes, in its pinned image |
 | `linux-aarch64` | `c7f780812b52524cae0171f2d38aea43f001a50d352cb05766f082df613b4277` | yes, in its pinned image |
-| `darwin-universal` | — | **not yet committed** |
+| `darwin-universal` | `7d2de6bd3af9b027d0c43ce3598022179b10a7c68ab0d85d3ab466725998ac7a` | only with Xcode 26.4 — weaker than an image: two machines agreeing, not a pinned toolchain |
 
 **Why the C toolchain has to be pinned.** `sigstore`'s certificate
 verification reaches a C library (`aws-lc-sys`) by three independent
@@ -157,13 +158,25 @@ on the registry still serving that digest. That is weaker than full
 bootstrappable provenance and stronger than "trust our CI", and it is
 worth saying which one it is.
 
-**macOS is not covered, and that is a real gap.** Apple's toolchain
-cannot be pinned by digest, so `darwin-universal` cannot get the same
-guarantee. It will be built on macOS runners with two passes on two
-runner versions — the evidence the server release already uses — and
-until then no macOS launcher is committed, so the plugin refuses to
-start there with a message saying so rather than running something
-unverified.
+**macOS gets weaker evidence, and that is a real gap.** Apple's
+toolchain cannot be pinned by digest, so `darwin-universal` cannot get
+the Linux guarantee. What it has instead: the hash above was produced on
+one Mac, twice — the second time from another checkout path with a cargo
+home of its own — and CI rebuilds it separately on two macOS runner
+versions with the same Xcode selected by name, and fails unless both
+match it. The
+Xcode is the pin that remains — its compiler builds `aws-lc`'s C and its
+SDK version is written into the binary — so another Xcode is expected to
+give another hash, and that is a toolchain change, not a fault.
+
+The macOS launcher is one universal binary (`x86_64` and `arm64`) with
+the linker's ad-hoc signature and **no Developer ID signature**. A
+plugin installed through Claude Code is not quarantined, so Gatekeeper
+never assesses it and it runs as committed. Copied out of a browser
+download instead, it would be quarantined, and macOS would stop it with
+a dialog that an editor running it in the background never shows — so
+install it through the marketplace, or clear the attribute with
+`xattr -d com.apple.quarantine` after checking the hash.
 
 ### The two download origins
 

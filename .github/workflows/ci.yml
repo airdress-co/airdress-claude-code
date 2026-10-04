@@ -219,3 +219,62 @@ jobs:
             echo "Run scripts/build-launchers.sh --write and commit the result.";
             exit 1;
           }
+
+  reproducible-macos:
+    name: The macOS launcher reproduces (${{ matrix.runner }})
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # Two runner versions, because there is no digest to pin and
+        # this is the evidence that remains: two different machines,
+        # each building once, agreeing with the hash a third produced.
+        runner: [macos-15, macos-26]
+    runs-on: ${{ matrix.runner }}
+    env:
+      # The Xcode the recorded hash was built with. clang compiles
+      # aws-lc's C, ld writes the load commands, and the SDK version is
+      # stamped into LC_BUILD_VERSION, so another Xcode is expected to
+      # give other bytes. Select it by name and refuse when the image
+      # lacks it, rather than build with the default and report a
+      # mismatch that is really a toolchain change.
+      XCODE_VERSION: "26.4"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select the pinned Xcode
+        run: |
+          set -euo pipefail
+          app="/Applications/Xcode_${XCODE_VERSION}.app"
+          if [ ! -d "$app" ]; then
+            echo "::error::Xcode ${XCODE_VERSION} is not on ${{ matrix.runner }}"
+            ls -d /Applications/Xcode*.app >&2
+            exit 1
+          fi
+          sudo xcode-select -s "$app"
+          xcodebuild -version
+
+      # rustup reads launcher-src/rust-toolchain.toml; the script adds
+      # the two Apple targets for that compiler itself.
+      - name: The bytes match what another machine produced
+        env:
+          PASSES: "1"
+        run: |
+          set -euo pipefail
+          scripts/build-launcher-macos.sh --write
+          expected=7d2de6bd3af9b027d0c43ce3598022179b10a7c68ab0d85d3ab466725998ac7a
+          got=$(shasum -a 256 plugins/airdress/launcher/darwin-universal/airdress-launch | cut -d" " -f1)
+          if [ "$got" != "$expected" ]; then
+            echo "::error::darwin-universal does not match the recorded cross-machine hash"
+            echo "  recorded elsewhere:    $expected"
+            echo "  built on this runner:  $got"
+            exit 1
+          fi
+          echo "darwin-universal matches: $got"
+
+      - name: The committed launcher is the reproduced one
+        run: git diff --exit-code -- plugins/airdress/launcher/darwin-universal || {
+            echo "::error::the committed macOS launcher differs from a fresh build";
+            echo "Run scripts/build-launcher-macos.sh --write on a Mac and commit the result.";
+            exit 1;
+          }
