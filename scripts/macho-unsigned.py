@@ -16,6 +16,12 @@ zeroes that one field as well, and nothing else. vmsize is the size of
 the segment in memory, not code or data; the file's contents are
 compared in full.
 
+The result is only comparable with another result from the SAME
+machine: `codesign --remove-signature` differs between macOS versions,
+measured 2026-10-05 — one committed file gave one form on macos-15 and
+another on macos-26. So every check here makes both forms side by side
+and compares those, never against a recorded hash.
+
 If a future codesign changes something more, the signing workflow's own
 check — that this form of the signed binary equals this form of the
 unsigned one — fails, which is where it should be found.
