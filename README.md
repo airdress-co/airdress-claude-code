@@ -64,7 +64,12 @@ knowing before you ask for something sensitive, and it is not something
 a plugin can change.
 
 **No credential ever leaves.** The server borrows your `airdress` CLI
-profile and writes no second copy of any token. Nothing it returns — a
+profile and writes no second copy of any token. With a current sign-in
+(`airdress auth login`, which signs in through the hub) each airdress is
+sent a token only that airdress accepts. A profile still holding the
+older sign-in, one token every airdress accepts, keeps working, and the
+server says so in the first answer of every session until you sign in
+again. Nothing it returns — a
 result, an error, a log line — carries an access token, a refresh token,
 a device code or a signing key, and a test hands it real-shaped secrets
 and fails if one appears.
