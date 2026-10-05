@@ -95,7 +95,11 @@ jobs:
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.RELEASE_WIF_PROVIDER }}
-          service_account: ${{ vars.RELEASE_PUBLISHER_SA }}
+          # Its own publisher: the only account that may overwrite the
+          # list, and one that can create nothing else. The provider admits
+          # this workflow on main and the release workflow at a tag, and
+          # nothing else (airdress-ops platform/plugin-publish-wif.tf).
+          service_account: ${{ vars.DENYLIST_PUBLISHER_SA }}
       - uses: google-github-actions/setup-gcloud@v2
 
       # Overwritten in place, which is the one object under this prefix
