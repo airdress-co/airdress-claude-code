@@ -77,4 +77,4 @@ for platform, p in platforms.items():
 PY
 
 echo
-echo "Now commit it, and point the marketplace entry's commit pin at that commit."
+echo "Now commit it on main, then: scripts/marketplace-pins.py pin <that commit>, and commit that."

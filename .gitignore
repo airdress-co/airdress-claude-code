@@ -8,3 +8,4 @@ launcher-src/target/
 
 # Editor and OS noise.
 .DS_Store
+__pycache__/

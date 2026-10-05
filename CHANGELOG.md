@@ -27,6 +27,13 @@ is more useful than a tidy list.
   write signed by this machine's agent device. Other sessions' messages
   arrive as channel events and are always readable with `bus_read`.
   `/airdress:bus` and `/airdress:claim` use them.
+- The release supply chain: each platform's `.mcpb` is built twice on two
+  runner images and the archives compared byte for byte (weekly too, and on
+  any change to the build); Sigstore keyless signatures verified with the
+  launcher's own identity before publishing; SLSA provenance from an
+  isolated generator; an immutable GitHub release and our CDN, then both
+  downloaded and compared. The marketplace entry pins a commit, and repeats
+  the bundles' SHA-256 for a reader.
 
 ### Known, and written down rather than smoothed over
 

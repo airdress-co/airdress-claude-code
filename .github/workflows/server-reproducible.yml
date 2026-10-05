@@ -1,0 +1,32 @@
+name: Server reproduces
+
+# The release's double build, run before there is a release: on every
+# change to how the server is built or packaged, weekly (a runner image
+# moves under us without a commit), and by hand. A release must never be
+# the first time two builds are compared — by then a mismatch stops a
+# tag that has already been pushed.
+
+on:
+  pull_request:
+    paths:
+      - server-src.json
+      - scripts/package-mcpb.py
+      - launcher-src/toolchain-images.json
+      - .github/workflows/server-build.yml
+      - .github/workflows/server-reproducible.yml
+      - .github/workflows/release.yml
+  schedule:
+    - cron: "41 3 * * 2"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: server-reproduces-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build twice
+    uses: ./.github/workflows/server-build.yml

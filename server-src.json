@@ -1,0 +1,6 @@
+{
+  "comment": "The airdress-cli revision every server build uses: the tag AND the commit it must resolve to, so a moved tag stops the build instead of changing what ships. Read by server-build.yml (release and the reproducibility check alike). v0.1.0-alpha.32 is the first tag carrying the keyring fix (de4c63f) without which the musl server cannot be built.",
+  "repository": "airdress-co/airdress-cli",
+  "tag": "v0.1.0-alpha.32",
+  "commit": "de4c63fd23b8a25fbb6216c1ea6c38b660dfb9ca"
+}
