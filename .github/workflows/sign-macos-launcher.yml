@@ -16,11 +16,6 @@ name: Sign the macOS launcher
 
 on:
   workflow_dispatch:
-  # TEMPORARY: dispatch needs the file on the default branch, and the
-  # first signing has to happen before this branch merges. Removed in the
-  # commit that adds the signed launcher.
-  push:
-    branches: [macos-launcher]
 
 permissions:
   contents: read
