@@ -194,12 +194,14 @@ scripts/macho-unsigned.py <the binary you built> rebuilt
 cmp committed rebuilt
 ```
 
-`macho-unsigned.py` removes the signature and zeroes one field codesign
-leaves behind (`__LINKEDIT`'s size in memory, not code or data); its
-header says why. Run both halves on **one** Mac: `codesign
---remove-signature` itself differs between macOS versions (measured: the
-same file gave two different results on `macos-15` and `macos-26`), so
-the signature-aside hash means something only beside its own pair. CI makes that comparison on every pull request, and the
+`macho-unsigned.py` takes the signature out by reading the binary
+itself — it removes the signature's load command and its bytes, and
+zeroes the two `__LINKEDIT` sizes that grow with it — so it runs anywhere
+and gives the same answer everywhere. It deliberately does not use
+`codesign --remove-signature`, whose result differs between macOS
+versions (measured on `macos-15` and `macos-26`); its header says what
+else it found. With the signature aside, the committed launcher is
+`95748faaf036ac6ae031634f7ff42eacefb493062169320e9ee8816fba46e0ef`. CI makes that comparison on every pull request, and the
 signing workflow makes it before handing a signed binary back.
 
 Measured on a Mac on 2026-10-05: a quarantined copy of the committed
