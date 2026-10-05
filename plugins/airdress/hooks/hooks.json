@@ -1,0 +1,108 @@
+{
+  "description": "Shell sessions: inside an Airdress shell session only (AIRDRESS_SHELL_SOCKET set by the host), report this session's events to the shell host on this machine, and pass back the person's answer to a permission prompt from their phone. Outside one, every hook exits at once and does nothing.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$AIRDRESS_SHELL_SOCKET\" ] || exit 0; command -v airdress >/dev/null 2>&1 || exit 0; exec airdress shell events",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$AIRDRESS_SHELL_SOCKET\" ] || exit 0; command -v airdress >/dev/null 2>&1 || exit 0; exec airdress shell events",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$AIRDRESS_SHELL_SOCKET\" ] || exit 0; command -v airdress >/dev/null 2>&1 || exit 0; exec airdress shell events",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$AIRDRESS_SHELL_SOCKET\" ] || exit 0; command -v airdress >/dev/null 2>&1 || exit 0; exec airdress shell events",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$AIRDRESS_SHELL_SOCKET\" ] || exit 0; command -v airdress >/dev/null 2>&1 || exit 0; exec airdress shell events",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$AIRDRESS_SHELL_SOCKET\" ] || exit 0; command -v airdress >/dev/null 2>&1 || exit 0; exec airdress shell events",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$AIRDRESS_SHELL_SOCKET\" ] || exit 0; command -v airdress >/dev/null 2>&1 || exit 0; exec airdress shell events",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$AIRDRESS_SHELL_SOCKET\" ] || exit 0; command -v airdress >/dev/null 2>&1 || exit 0; exec airdress shell events",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$AIRDRESS_SHELL_SOCKET\" ] || exit 0; command -v airdress >/dev/null 2>&1 || exit 0; exec airdress shell events",
+            "timeout": 130
+          }
+        ]
+      }
+    ]
+  }
+}

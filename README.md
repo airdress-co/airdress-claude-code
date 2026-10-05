@@ -43,7 +43,18 @@ hosted assistant and vouched for by the server, which is the weaker
 promise), with whether its signature verified. Other sessions' messages
 arrive in the conversation as channel events when the Airdress channel
 is on, and are always readable with `bus_read`, so nothing is lost when
-it is off. There is no permission relay.
+it is off. The bus relays no permission prompts.
+
+**Inside an Airdress shell session**, and only there, the plugin's hooks
+report this session's events (prompts, tool calls, the end of a turn) to
+the shell host on this machine, which shows them end to end encrypted on
+your own devices. A permission prompt can then be answered by your tap
+on your phone: the hook waits up to two minutes for it, and with no
+answer the prompt in your terminal stands. Nothing answers for you.
+Outside a shell session (`airdress shell run`, or a profile your shell
+host starts), every hook exits at once and does nothing. The hooks run
+`airdress shell events` from the `airdress` CLI, which must be on your
+`PATH`; they read nothing of Claude Code's own files.
 
 **Read only**, in the plugin's settings, removes every tool that changes
 anything — and a model that asks for one by name is refused, rather than
