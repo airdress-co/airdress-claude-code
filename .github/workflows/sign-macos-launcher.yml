@@ -82,7 +82,7 @@ jobs:
             echo "| --- | --- |"
             echo "| signed (commit this) | \`$(shasum -a 256 signed/airdress-launch | cut -d' ' -f1)\` |"
             echo "| built, as both runners produced it | \`$(shasum -a 256 unsigned/airdress-launch | cut -d' ' -f1)\` |"
-            echo "| either, signature aside (this runner's codesign only) | \`$(shasum -a 256 "$RUNNER_TEMP/signed.form" | cut -d' ' -f1)\` |"
+            echo "| either, signature aside (scripts/macho-unsigned.py) | \`$(shasum -a 256 "$RUNNER_TEMP/signed.form" | cut -d' ' -f1)\` |"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
