@@ -56,9 +56,23 @@ rm -f "$key"
 
 # A bare binary cannot be stapled, so the check is Gatekeeper's own
 # verdict on the signature and the notarization ticket it fetches.
-spctl --assess --type execute --verbose=2 "$binary" || {
-    echo "Gatekeeper refused the signed binary" >&2
-    exit 1
-}
+#
+# Not `--type execute`: that assesses app bundles only, and refuses ANY
+# bare command-line binary with "the code is valid but does not seem to
+# be an app" — measured 2026-10-05 on a launcher Apple had just accepted.
+# `--type open` with the primary-signature context assesses the binary
+# itself, and answers "source=Notarized Developer ID" for a notarized
+# tool (docker, code-tunnel and claude measured on a Mac) while an
+# un-notarized one is rejected. Require that exact source: "accepted" on
+# its own would also pass a binary signed but never notarized.
+verdict=$(spctl --assess -vv --type open --context context:primary-signature "$binary" 2>&1) || true
+echo "$verdict"
+case "$verdict" in
+    *"accepted"*"source=Notarized Developer ID"*) ;;
+    *)
+        echo "Gatekeeper did not accept the signed binary as notarized" >&2
+        exit 1
+        ;;
+esac
 security delete-keychain "$keychain"
 echo "signed and notarized: $binary"
