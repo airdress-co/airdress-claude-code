@@ -6,6 +6,12 @@ is more useful than a tidy list.
 
 ## Unreleased
 
+- Shell sessions: hooks that, inside an Airdress shell session only,
+  hand this session's events to the shell host on this machine through
+  `airdress shell events`, and pass a permission answer tapped on your
+  phone back to Claude Code (`PermissionRequest`, waiting up to 120 s,
+  then nothing, so the terminal's own prompt stands). Outside a shell
+  session every hook exits at once.
 - First plugin: the query half and the functions dev loop, over MCP.
   Sign in, list airdresses, read one's status and capabilities; list
   functions, their versions and their logs; validate, deploy and promote
