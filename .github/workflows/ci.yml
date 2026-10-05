@@ -92,6 +92,23 @@ jobs:
         with:
           incremental_files_only: false
 
+  pinning:
+    name: Bundles and marketplace pins
+    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The marketplace check reads the pinned commit's pins.json.
+          fetch-depth: 0
+      # scripts/tests/test_supply_chain.py: the `.mcpb` packer is
+      # byte-reproducible across paths, mtimes and modes, and the
+      # marketplace pin check refuses what it should.
+      - name: Supply-chain script tests
+        run: python3 -m unittest discover -s scripts/tests -v
+      - name: The marketplace entry is pinned by commit and SHA-256
+        run: python3 scripts/marketplace-pins.py check
+
   hygiene:
     name: Public hygiene
     timeout-minutes: 10

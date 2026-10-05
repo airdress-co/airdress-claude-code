@@ -429,6 +429,36 @@ mod tests {
         }
     }
 
+    /// The release packs bundles STORED, not deflated, so that two builds
+    /// produce one archive whatever zlib each runner has
+    /// (`scripts/package-mcpb.py`). The extraction has to take that form.
+    #[test]
+    fn a_stored_bundle_as_the_release_packs_it_extracts() {
+        use std::io::Write as _;
+        let mut buffer = Vec::new();
+        {
+            let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buffer));
+            let stored = zip::write::SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Stored)
+                .unix_permissions(0o755);
+            for (name, body) in [
+                ("README.md", &b"readme"[..]),
+                ("airdress-mcp", &b"#!/bin/sh\nexit 0\n"[..]),
+                ("manifest.json", &b"{}"[..]),
+            ] {
+                zip.start_file::<_, ()>(name, stored).unwrap();
+                zip.write_all(body).unwrap();
+            }
+            zip.finish().unwrap();
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let cache = dir.path().join("bundles/stored");
+        extract(&buffer, &cache).unwrap();
+        assert!(cache.join("airdress-mcp").exists());
+        assert!(cache.join("manifest.json").exists());
+        assert!(cache.join("verified").exists());
+    }
+
     #[test]
     fn a_bundle_without_a_server_is_refused() {
         let dir = tempfile::tempdir().unwrap();

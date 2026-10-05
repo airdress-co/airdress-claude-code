@@ -1,0 +1,243 @@
+name: Server build
+
+# The MCP server and its per-platform `.mcpb`, built twice — pass A and
+# pass B on different runner images, with no shared cache — and compared.
+# One definition, called by the release and by the standing
+# reproducibility check, so the two can never build it differently.
+#
+# What is compared is the `.mcpb`, not only the binary inside it: the
+# launcher pins the archive's SHA-256, so an archive that differs with
+# identical contents would be a release nobody can reproduce. macOS is
+# compared before Developer ID signing, which changes the bytes; the
+# release signs after this gate and checks that the signature is the
+# only difference.
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: The plugin version the bundles were packaged as
+        value: ${{ jobs.compare.outputs.version }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.platform }} (${{ matrix.pass }})
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: linux-x86_64, target: x86_64-unknown-linux-musl, runner: ubuntu-24.04, pass: A }
+          - { platform: linux-x86_64, target: x86_64-unknown-linux-musl, runner: ubuntu-22.04, pass: B }
+          - { platform: linux-aarch64, target: aarch64-unknown-linux-musl, runner: ubuntu-24.04, pass: A }
+          - { platform: linux-aarch64, target: aarch64-unknown-linux-musl, runner: ubuntu-22.04, pass: B }
+          # The two runner versions the macOS launcher is already proven
+          # on, with the one Xcode both carry (see below).
+          - { platform: darwin-universal, target: universal-apple-darwin, runner: macos-15, pass: A }
+          - { platform: darwin-universal, target: universal-apple-darwin, runner: macos-26, pass: B }
+    runs-on: ${{ matrix.runner }}
+    env:
+      XCODE_VERSION: "26.3"
+      XCODE_BUILD: "17C529"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the pinned airdress-cli revision
+        id: src
+        run: |
+          set -euo pipefail
+          python3 - >> "$GITHUB_OUTPUT" <<'PY'
+          import json
+          d = json.load(open("server-src.json"))
+          print(f"repository={d['repository']}")
+          print(f"tag={d['tag']}")
+          print(f"commit={d['commit']}")
+          PY
+
+      # airdress-cli is private until its publication task is done. Say
+      # that, rather than letting the checkout fail as if it were a
+      # permissions problem of this workflow.
+      - name: The server's source is public
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' "https://github.com/${{ steps.src.outputs.repository }}")
+          if [ "$code" != "200" ]; then
+            echo "::error::https://github.com/${{ steps.src.outputs.repository }} answers $code: the server's source is not public yet, so nobody else could rebuild this release. It is built from public source or not at all."
+            exit 1
+          fi
+
+      - name: Check out the pinned airdress-cli
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.src.outputs.repository }}
+          ref: ${{ steps.src.outputs.tag }}
+          path: airdress-cli
+
+      - name: The tag is still the pinned commit
+        working-directory: airdress-cli
+        run: |
+          set -euo pipefail
+          got=$(git rev-parse HEAD)
+          if [ "$got" != "${{ steps.src.outputs.commit }}" ]; then
+            echo "::error::${{ steps.src.outputs.tag }} now resolves to $got, not ${{ steps.src.outputs.commit }} as server-src.json pins. A moved tag is refused, not followed."
+            exit 1
+          fi
+
+      - name: Select the pinned Xcode
+        if: runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          app="/Applications/Xcode_${XCODE_VERSION}.app"
+          [ -d "$app" ] || { echo "::error::Xcode ${XCODE_VERSION} is not on ${{ matrix.runner }}"; ls -d /Applications/Xcode*.app; exit 1; }
+          sudo xcode-select -s "$app"
+          build=$(xcodebuild -version | awk '/Build version/{print $3}')
+          [ "$build" = "$XCODE_BUILD" ] || { echo "::error::$app is build $build, not $XCODE_BUILD"; exit 1; }
+          xcodebuild -version
+
+      - uses: dtolnay/rust-toolchain@master
+        if: runner.os == 'macOS'
+        with:
+          toolchain: "1.98.0"
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+
+      - name: Build the server
+        working-directory: airdress-cli
+        env:
+          CARGO_INCREMENTAL: "0"
+        run: |
+          set -euo pipefail
+          SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
+          export SOURCE_DATE_EPOCH
+          if [ "${{ matrix.target }}" = "universal-apple-darwin" ]; then
+            # The launcher's measured fixes for Apple's LC_UUID, which ld
+            # derives from every path that reaches the link: C paths
+            # remapped for `cc` (RUSTFLAGS never reaches it), zero archive
+            # dates, no debug map at link time, one build directory and
+            # an explicit deployment target. Without them two runners
+            # with identical code differ in 48 bytes.
+            export MACOSX_DEPLOYMENT_TARGET=11.0 ZERO_AR_DATE=1
+            build_dir=/tmp/airdress-mcp-macos
+            rm -rf "$build_dir"
+            export CARGO_TARGET_DIR="$build_dir"
+            maps="$PWD=/airdress-cli $HOME/.cargo=/cargo $build_dir=/target"
+            RUSTFLAGS="-C link-arg=-Wl,-S"; CFLAGS=""
+            for m in $maps; do
+              RUSTFLAGS="$RUSTFLAGS --remap-path-prefix=$m"; CFLAGS="$CFLAGS -ffile-prefix-map=$m"
+            done
+            export RUSTFLAGS CFLAGS
+            for t in x86_64-apple-darwin aarch64-apple-darwin; do
+              cargo build --release --locked -p airdress-mcp --target "$t"
+            done
+            lipo -create -output airdress-mcp \
+              "$build_dir/x86_64-apple-darwin/release/airdress-mcp" \
+              "$build_dir/aarch64-apple-darwin/release/airdress-mcp"
+          else
+            # Linux, inside the digest-pinned image the launcher is also
+            # built in. The source is copied to a fixed path so the
+            # remapped prefix does not depend on the runner, and the
+            # output is chowned back so an unprivileged runner can clean up.
+            image=$(python3 -c '
+          import json, sys
+          d = json.load(open("../launcher-src/toolchain-images.json"))
+          for p in d["platforms"].values():
+              if p["target"] == sys.argv[1]:
+                  print(p["image"]); break
+          ' "${{ matrix.target }}")
+            case "$image" in *@sha256:*) ;; *) echo "::error::no digest-pinned image for ${{ matrix.target }}: '$image'"; exit 1 ;; esac
+            echo "building in $image"
+            docker run --rm \
+              -v "$PWD":/src:ro -v "$PWD/out":/out \
+              -e CARGO_TARGET_DIR=/out/target -e CARGO_INCREMENTAL=0 \
+              -e SOURCE_DATE_EPOCH="$SOURCE_DATE_EPOCH" \
+              -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+              "$image" bash -lc "
+                set -euo pipefail
+                mkdir -p /work && cp -r /src/. /work/ && cd /work
+                export RUSTFLAGS='--remap-path-prefix=/work=/airdress-cli --remap-path-prefix=/root/.cargo=/cargo --remap-path-prefix=/out/target=/target -C target-feature=+crt-static'
+                cargo build --release --locked -p airdress-mcp --target ${{ matrix.target }}
+                cp /out/target/${{ matrix.target }}/release/airdress-mcp /out/airdress-mcp
+                chown -R \"\$HOST_UID:\$HOST_GID\" /out
+              "
+            cp out/airdress-mcp airdress-mcp
+          fi
+          shasum -a 256 airdress-mcp
+
+      # The server ships the query half; no MLS library is in it, and a
+      # dependency that is not there cannot have a bug.
+      - name: No MLS in the dependency tree
+        working-directory: airdress-cli
+        run: |
+          if cargo tree -p airdress-mcp --locked | grep -iE 'airdress-mls|mls-rs|openmls'; then
+            echo "::error::an MLS crate is in airdress-mcp's dependency tree"
+            exit 1
+          fi
+          echo "no MLS crate in the tree"
+
+      # The archive, in the same job as the build it packages: pass B's
+      # `.mcpb` is a second, independent product, not a copy of A's. The
+      # timestamp inside is this repository's commit, which both passes
+      # share.
+      - name: Package the bundle
+        run: |
+          set -euo pipefail
+          SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
+          export SOURCE_DATE_EPOCH
+          version=$(python3 -c "import json;print(json.load(open('plugins/airdress/.claude-plugin/plugin.json'))['version'])")
+          mkdir -p out
+          cp airdress-cli/airdress-mcp out/airdress-mcp
+          python3 scripts/package-mcpb.py \
+            --platform "${{ matrix.platform }}" \
+            --server out/airdress-mcp \
+            --version "$version" \
+            --include LICENSE --include NOTICE \
+            --out "out/airdress-${{ matrix.platform }}.mcpb"
+          shasum -a 256 out/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: server-${{ matrix.platform }}-${{ matrix.pass }}
+          path: out/
+          if-no-files-found: error
+
+  compare:
+    name: Both builds agree
+    needs: build
+    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: version
+        run: echo "version=$(python3 -c "import json;print(json.load(open('plugins/airdress/.claude-plugin/plugin.json'))['version'])")" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          path: builds
+      - name: Compare A and B, binary and bundle
+        run: |
+          set -euo pipefail
+          fail=0
+          {
+            echo "### Server builds"
+            echo
+            echo "| platform | file | SHA-256 | A = B |"
+            echo "|---|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for platform in linux-x86_64 linux-aarch64 darwin-universal; do
+            for f in airdress-mcp "airdress-$platform.mcpb"; do
+              a="builds/server-$platform-A/$f"; b="builds/server-$platform-B/$f"
+              ha=$(sha256sum "$a" | cut -d' ' -f1)
+              if cmp -s "$a" "$b"; then
+                echo "$platform $f: identical ($ha)"
+                echo "| $platform | $f | \`$ha\` | yes |" >> "$GITHUB_STEP_SUMMARY"
+              else
+                echo "::error::$platform $f DIFFERS between the two passes"
+                sha256sum "$a" "$b"
+                echo "| $platform | $f | \`$ha\` | **NO** |" >> "$GITHUB_STEP_SUMMARY"
+                fail=1
+              fi
+            done
+          done
+          [ "$fail" -eq 0 ]

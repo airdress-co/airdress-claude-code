@@ -1,322 +1,268 @@
 name: Release
 
+# Tag `vX.Y.Z` (equal to plugin.json's version) and this runs. Tags only:
+# the Sigstore certificate names this workflow AT THE TAG, which is the
+# identity `launcher/pins.json` pins, so a run from a branch would sign
+# bundles no launcher accepts.
+#
+#   build        two passes per platform, `.mcpb` compared (server-build.yml)
+#   sign-macos   Developer ID + notarization, in the job that alone holds
+#                the Apple secrets; no OIDC token, no write token
+#   package      dist/, SHA256SUMS, cosign keyless signatures (Rekor);
+#                OIDC token, no secrets, no write token
+#   provenance   SLSA provenance from slsa-github-generator's isolated
+#                reusable workflow
+#   publish      verify everything, then GitHub release (immutable) and the
+#                CDN, then download both and compare
+#
+# Then, by a person: scripts/write-pins.sh, commit, and
+# scripts/marketplace-pins.py pin <that commit>, commit. Two commits by
+# construction: the pins name artifacts that have to exist first.
+
 on:
   push:
     tags: ["v*"]
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag to release, e.g. v0.1.0"
-        required: true
 
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
-  # The airdress-cli tag this release builds the server from. The plugin
-  # names it; a release is not reproducible if it tracks a branch.
-  #
-  # It used to say `v0.1.0`, and no such tag exists — airdress-cli's tags
-  # are `v0.1.0-alpha.NN` — so this workflow would have failed at
-  # checkout before compiling anything. Found 2026-10-04, the first time
-  # it was examined; it had never run.
-  #
-  # `v0.1.0-alpha.32` is the first tag that carries the keyring fix
-  # (airdress-cli `de4c63f`, "Secret Service on glibc only"). Without it
-  # airdress-mcp cannot be built for musl at all, so an earlier tag
-  # reintroduces the failure this workflow was repaired for — which is
-  # what the step below refuses, rather than letting a stale or absent
-  # tag look like a build problem.
-  CLI_TAG: v0.1.0-alpha.32
+  IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/release.yml@${{ github.ref }}
+  ISSUER: https://token.actions.githubusercontent.com
 
 jobs:
-  # Two builds, in two jobs, on two runner images, with no shared cache.
-  # If they disagree the release stops (FR-69). A build that cannot be
-  # reproduced cannot be audited by anybody but us, which defeats the
-  # point of publishing the pins at all.
-  build:
-    name: Build ${{ matrix.platform }} (${{ matrix.pass }})
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: linux-x86_64
-            target: x86_64-unknown-linux-musl
-            runner: ubuntu-24.04
-            pass: A
-          - platform: linux-x86_64
-            target: x86_64-unknown-linux-musl
-            runner: ubuntu-22.04
-            pass: B
-          - platform: linux-aarch64
-            target: aarch64-unknown-linux-musl
-            runner: ubuntu-24.04
-            pass: A
-          - platform: linux-aarch64
-            target: aarch64-unknown-linux-musl
-            runner: ubuntu-22.04
-            pass: B
-          - platform: darwin-universal
-            target: universal-apple-darwin
-            runner: macos-15
-            pass: A
-          - platform: darwin-universal
-            target: universal-apple-darwin
-            runner: macos-14
-            pass: B
-    runs-on: ${{ matrix.runner }}
+  preflight:
+    name: The tag is the plugin's version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+      - run: |
+          set -euo pipefail
+          version=$(python3 -c "import json;print(json.load(open('plugins/airdress/.claude-plugin/plugin.json'))['version'])")
+          [ "${GITHUB_REF_NAME}" = "v$version" ] || {
+            echo "::error::tag ${GITHUB_REF_NAME} but plugin.json says $version"; exit 1; }
 
-      - name: Check out the pinned airdress-cli
-        uses: actions/checkout@v4
+  build:
+    name: Build
+    needs: preflight
+    uses: ./.github/workflows/server-build.yml
+
+  sign-macos:
+    name: Sign and notarize the macOS server
+    needs: build
+    timeout-minutes: 120
+    runs-on: macos-26
+    # The Apple secrets live in this environment only.
+    environment: apple-signing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
-          repository: airdress-co/airdress-cli
-          ref: ${{ env.CLI_TAG }}
-          path: airdress-cli
-
-      # Say which thing is wrong. A missing tag otherwise surfaces as a
-      # checkout failure that reads like a permissions problem.
-      - name: The pinned CLI tag exists and carries the keyring fix
-        working-directory: airdress-cli
+          name: server-darwin-universal-A
+          path: unsigned
+      - name: Sign and notarize
+        env:
+          APPLE_CERT_P12: ${{ secrets.APPLE_CERT_P12 }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_SIGNING_IDENTITY: ${{ vars.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_KEY_ID: ${{ vars.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ vars.APPLE_API_ISSUER_ID }}
         run: |
           set -euo pipefail
-          echo "building the server from airdress-cli ${{ env.CLI_TAG }}"
-          git rev-parse -q --verify "HEAD" >/dev/null
-          # The commit that scoped keyring's Secret Service feature to
-          # glibc. Without it `cargo build --target *-linux-musl` dies
-          # in libdbus-sys' build script, on x86_64 as well as aarch64.
-          if ! git merge-base --is-ancestor de4c63f HEAD 2>/dev/null; then
-            echo "::error::${{ env.CLI_TAG }} predates the keyring fix (de4c63f)."
-            echo "The Linux server cannot be built from it: keyring's"
-            echo "sync-secret-service needs libdbus for the target, and"
-            echo "there is none for musl. Pick a later tag."
-            exit 1
-          fi
-
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: "1.98.0"
-          targets: ${{ matrix.target == 'universal-apple-darwin' && 'x86_64-apple-darwin,aarch64-apple-darwin' || matrix.target }}
-
-      # No apt packages for the Linux targets: the C toolchain comes from
-      # a digest-pinned image, the same ones the launcher is built in
-      # (launcher-src/toolchain-images.json).
-      #
-      # What the apt line could not do, measured 2026-10-04 the first
-      # time this workflow was ever exercised:
-      #
-      #   * `gcc-aarch64-linux-gnu` targets GLIBC, so
-      #     aarch64-unknown-linux-musl had no correct linker and the
-      #     build failed whatever else was installed;
-      #   * `libdbus-1-dev` is the host's, and `keyring`'s
-      #     sync-secret-service wanted libdbus FOR THE TARGET, so
-      #     x86_64-unknown-linux-musl died in libdbus-sys' build script
-      #     too. That half is fixed in airdress-cli, which now scopes
-      #     the feature to glibc.
-      #
-      # Pinning the compiler is also what makes the bytes comparable
-      # between the two passes below on different runner images: a C
-      # dependency compiled by two different `cc` cannot match.
-
-      - name: Build the server
-        working-directory: airdress-cli
-        env:
-          # No build timestamp, no path from this runner, and the
-          # lockfile decides every version. The timestamp comes from the
-          # tagged commit, so both passes agree.
-          CARGO_INCREMENTAL: "0"
+          mkdir -p signed
+          cp unsigned/airdress-mcp signed/airdress-mcp
+          scripts/sign-macos.sh signed/airdress-mcp
+      # The claim the README makes, made here: with the signature aside,
+      # what ships is the build both runners agreed on.
+      - name: Signature aside, it is the build
+        run: |
+          set -euo pipefail
+          scripts/macho-unsigned.py unsigned/airdress-mcp "$RUNNER_TEMP/unsigned.form"
+          scripts/macho-unsigned.py signed/airdress-mcp "$RUNNER_TEMP/signed.form"
+          cmp "$RUNNER_TEMP/unsigned.form" "$RUNNER_TEMP/signed.form" || {
+            echo "::error::signing changed more than the signature"; exit 1; }
+      - name: Package the signed bundle
         run: |
           set -euo pipefail
           SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
           export SOURCE_DATE_EPOCH
-          export RUSTFLAGS="--remap-path-prefix=$PWD=/airdress-cli --remap-path-prefix=$HOME/.cargo=/cargo"
-          if [ "${{ matrix.target }}" = "universal-apple-darwin" ]; then
-            # macOS builds natively. Apple's toolchain cannot be pinned
-            # by digest, so the evidence here is the two passes on two
-            # runner versions and nothing stronger; that asymmetry is
-            # stated in the README rather than left to be noticed.
-            for t in x86_64-apple-darwin aarch64-apple-darwin; do
-              cargo build --release --locked -p airdress-mcp --target "$t"
-            done
-            lipo -create -output airdress-mcp \
-              target/x86_64-apple-darwin/release/airdress-mcp \
-              target/aarch64-apple-darwin/release/airdress-mcp
-          else
-            # Linux, inside the pinned image. The source is copied in so
-            # the remapped prefix does not depend on where the checkout
-            # sits, and the artefacts are chowned back or an
-            # unprivileged runner cannot clean up after a root
-            # container — which once turned a passing build red.
-            image=$(python3 -c '
-            import json, sys
-            d = json.load(open("../launcher-src/toolchain-images.json"))
-            for p in d["platforms"].values():
-                if p["target"] == sys.argv[1]:
-                    print(p["image"]); break
-            ' "${{ matrix.target }}")
-            [ -n "$image" ] || { echo "no pinned image for ${{ matrix.target }}" >&2; exit 1; }
-            case "$image" in *@sha256:*) ;; *) echo "image not digest-pinned: $image" >&2; exit 1 ;; esac
-            echo "building in $image"
-            docker run --rm \
-              -v "$PWD":/src:ro -v "$PWD/out":/out \
-              -e CARGO_TARGET_DIR=/out/target -e CARGO_INCREMENTAL=0 \
-              -e SOURCE_DATE_EPOCH="$SOURCE_DATE_EPOCH" \
-              -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
-              "$image" bash -lc "
-                set -euo pipefail
-                mkdir -p /work && cp -r /src/. /work/ && cd /work
-                export RUSTFLAGS='--remap-path-prefix=/work=/airdress-cli --remap-path-prefix=/root/.cargo=/cargo -C target-feature=+crt-static'
-                cargo build --release --locked -p airdress-mcp --target ${{ matrix.target }}
-                cp /out/target/${{ matrix.target }}/release/airdress-mcp /out/airdress-mcp
-                chown -R \"\$HOST_UID:\$HOST_GID\" /out
-              "
-            cp out/airdress-mcp airdress-mcp
-          fi
-          shasum -a 256 airdress-mcp
-
-      # The MLS library must not be in this build (the S1 release gate):
-      # the server ships the query half, and a dependency that is not
-      # there cannot have a bug.
-      - name: No MLS in the dependency tree
-        working-directory: airdress-cli
-        run: |
-          if cargo tree -p airdress-mcp --locked | grep -iE 'airdress-mls|mls-rs|openmls'; then
-            echo "an MLS crate is in airdress-mcp's dependency tree" >&2
-            exit 1
-          fi
-          echo "no MLS crate in the tree"
-
+          python3 scripts/package-mcpb.py --platform darwin-universal \
+            --server signed/airdress-mcp \
+            --version "${{ needs.build.outputs.version }}" \
+            --include LICENSE --include NOTICE \
+            --out signed/airdress-darwin-universal.mcpb
       - uses: actions/upload-artifact@v4
         with:
-          name: server-${{ matrix.platform }}-${{ matrix.pass }}
-          path: airdress-cli/airdress-mcp
+          name: signed-darwin-universal
+          path: signed/airdress-darwin-universal.mcpb
           if-no-files-found: error
 
-  compare:
-    name: Both builds agree
-    needs: build
-    timeout-minutes: 10
+  package:
+    name: Package and sign (Sigstore)
+    needs: [build, sign-macos]
+    timeout-minutes: 20
     runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: builds
-      - name: Compare A and B
-        run: |
-          set -euo pipefail
-          fail=0
-          for platform in linux-x86_64 linux-aarch64 darwin-universal; do
-            a="builds/server-$platform-A/airdress-mcp"
-            b="builds/server-$platform-B/airdress-mcp"
-            if cmp -s "$a" "$b"; then
-              echo "$platform: identical ($(sha256sum "$a" | cut -d' ' -f1))"
-            else
-              echo "$platform: DIFFERS" >&2
-              sha256sum "$a" "$b" >&2
-              fail=1
-            fi
-          done
-          # macOS is compared pre-signing, which is what these are:
-          # signing and notarization happen below, after this gate.
-          [ $fail -eq 0 ] || exit 1
-
-  publish:
-    name: Sign, package and publish
-    needs: compare
-    timeout-minutes: 45
-    runs-on: macos-15
-    # The Apple secrets live in this environment only.
-    environment: apple-signing
     permissions:
-      # cosign keyless signing, and the provenance attestation.
-      id-token: write
-      contents: write
-      attestations: write
+      contents: read
+      id-token: write   # cosign keyless: the certificate names this workflow at this tag
+    outputs:
+      subjects: ${{ steps.subjects.outputs.subjects }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: builds
-
-      # macOS only: Developer ID signature and notarization. The
-      # pre-signing bytes were compared above, because signing changes
-      # them and anybody can strip a signature to compare (FR-76).
-      - name: Sign and notarize the macOS server
-        env:
-          APPLE_CERT_P12: ${{ secrets.APPLE_CERT_P12 }}
-          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ vars.APPLE_SIGNING_IDENTITY }}
-          APPLE_API_KEY_ID: ${{ vars.APPLE_API_KEY_ID }}
-          APPLE_API_ISSUER_ID: ${{ vars.APPLE_API_ISSUER_ID }}
-          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
-        run: scripts/sign-macos.sh builds/server-darwin-universal-A/airdress-mcp
-
-      - name: Package the bundles
-        run: scripts/package-bundles.sh
-
-      - uses: sigstore/cosign-installer@v3
-
-      # Keyless: the signing identity IS this workflow at this tag, and
-      # `launcher/pins.json` is what says so. Recorded in Rekor, which
-      # is where the launcher's inclusion proof comes from.
-      - name: Sign every artifact
+      - name: Assemble dist/
         run: |
           set -euo pipefail
-          for artifact in dist/*.mcpb; do
-            cosign sign-blob --yes \
-              --bundle "$artifact.sigstore.json" \
-              "$artifact"
+          mkdir -p dist
+          cp builds/server-linux-x86_64-A/airdress-linux-x86_64.mcpb dist/
+          cp builds/server-linux-aarch64-A/airdress-linux-aarch64.mcpb dist/
+          cp builds/signed-darwin-universal/airdress-darwin-universal.mcpb dist/
+          (cd dist && sha256sum *.mcpb > SHA256SUMS)
+          cat dist/SHA256SUMS
+          scripts/release-notes.sh "${GITHUB_REF_NAME#v}" > dist/NOTES.md
+      - uses: sigstore/cosign-installer@v3
+      - name: Sign every bundle, recorded in Rekor
+        run: |
+          set -euo pipefail
+          for f in dist/*.mcpb dist/SHA256SUMS; do
+            cosign sign-blob --yes --bundle "$f.sigstore.json" "$f"
           done
-          (cd dist && shasum -a 256 *.mcpb > SHA256SUMS)
-          cosign sign-blob --yes --bundle dist/SHA256SUMS.sigstore.json dist/SHA256SUMS
-
-      # SLSA provenance. Whether a build split across Linux and macOS
-      # runners, with signing secrets in the macOS job, meets Build L3's
-      # isolation is UNVERIFIED (design §3.7); the level actually reached
-      # is recorded in the release notes rather than claimed here.
-      - uses: actions/attest-build-provenance@v2
+      # Verified here, with exactly what the launcher will pin, before
+      # anything is published: an identity that does not match is a
+      # release no launcher would start.
+      - name: Verify as the launcher will
+        run: |
+          set -euo pipefail
+          for f in dist/*.mcpb dist/SHA256SUMS; do
+            cosign verify-blob --bundle "$f.sigstore.json" \
+              --certificate-identity "$IDENTITY" \
+              --certificate-oidc-issuer "$ISSUER" "$f"
+          done
+      - id: subjects
+        run: echo "subjects=$(cd dist && sha256sum *.mcpb | base64 -w0)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
         with:
-          subject-path: dist/*.mcpb
+          name: dist
+          path: dist/
+          if-no-files-found: error
 
-      - name: Publish the GitHub release
+  # SLSA provenance from the generic generator: an isolated reusable
+  # workflow signs it, so a build step cannot forge it. Its documentation
+  # claims Build L3 for that arrangement; what this release reaches is
+  # stated in the notes, not here (the macOS bundle is changed by the
+  # signing job after the compared build, and that job is ours).
+  provenance:
+    name: Provenance
+    needs: package
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      base64-subjects: ${{ needs.package.outputs.subjects }}
+      provenance-name: airdress-claude-code.intoto.jsonl
+      upload-assets: false
+
+  publish:
+    name: Publish to both origins
+    needs: [package, provenance]
+    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write   # the GitHub release
+      id-token: write   # WIF to the CDN publisher
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.provenance.outputs.provenance-name }}
+          path: dist
+      - uses: sigstore/cosign-installer@v3
+      - uses: slsa-framework/slsa-verifier/actions/installer@v2.7.1
+      - name: Verify signatures and provenance before publishing
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum -c SHA256SUMS
+          for f in *.mcpb SHA256SUMS; do
+            cosign verify-blob --bundle "$f.sigstore.json" \
+              --certificate-identity "$IDENTITY" --certificate-oidc-issuer "$ISSUER" "$f"
+          done
+          slsa-verifier verify-artifact *.mcpb \
+            --provenance-path airdress-claude-code.intoto.jsonl \
+            --source-uri "github.com/${{ github.repository }}" \
+            --source-tag "${GITHUB_REF_NAME}"
+
+      # Draft first, assets attached, then published: with immutable
+      # releases on, publishing is what locks the assets and the tag.
+      - name: GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="${{ github.ref_name }}"
-          gh release create "$tag" dist/* \
-            --title "$tag" \
-            --notes-file dist/NOTES.md \
-            --verify-tag
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          gh release create "$tag" dist/*.mcpb dist/*.sigstore.json dist/SHA256SUMS \
+            dist/airdress-claude-code.intoto.jsonl \
+            --draft --verify-tag --title "$tag" --notes-file dist/NOTES.md
+          gh release edit "$tag" --draft=false
+          immutable=$(gh api "repos/${{ github.repository }}/releases/tags/$tag" --jq '.immutable')
+          if [ "$immutable" != "true" ]; then
+            echo "::error::the release was published but is NOT immutable: turn on immutable releases for this repository (Settings → General → Releases). Its assets could be replaced; the signatures would still refuse a replacement, but the public record would not hold."
+            exit 1
+          fi
 
-      # Our CDN, second, through a prefix-scoped publisher that may only
-      # create objects under `claude-code/`. The bytes are identical;
-      # the launcher verifies the same signature from either origin.
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.RELEASE_WIF_PROVIDER }}
           service_account: ${{ vars.RELEASE_PUBLISHER_SA }}
       - uses: google-github-actions/setup-gcloud@v2
-      - name: Publish to the CDN
+      # The publisher may create under claude-code/ and never overwrite,
+      # and --no-clobber says the same from this side.
+      - name: Our CDN
         run: |
           set -euo pipefail
-          tag="${{ github.ref_name }}"
-          gcloud storage cp dist/* \
-            "gs://${{ vars.DOWNLOADS_BUCKET }}/claude-code/$tag/" \
-            --cache-control="public, max-age=31536000, immutable"
+          gcloud storage cp --no-clobber \
+            --cache-control="public, max-age=31536000, immutable" \
+            dist/*.mcpb dist/*.sigstore.json dist/SHA256SUMS dist/airdress-claude-code.intoto.jsonl \
+            "gs://${{ vars.DOWNLOADS_BUCKET }}/claude-code/${GITHUB_REF_NAME}/"
 
-      - name: Say what has to happen next
+      # Byte-identical from either origin, fetched as a user would.
+      - name: Both origins serve the same verified bytes
         run: |
-          cat <<'MSG'
-          Published. The release is NOT installable yet: the pins commit
-          is what makes it so.
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          mkdir -p from-cdn from-github
+          for f in $(cd dist && ls *.mcpb *.sigstore.json SHA256SUMS); do
+            curl -fsSL -A airdress-launch -o "from-cdn/$f" "https://downloads.airdress.co/claude-code/$tag/$f"
+            curl -fsSL -A airdress-launch -o "from-github/$f" "https://github.com/${{ github.repository }}/releases/download/$tag/$f"
+            cmp "dist/$f" "from-cdn/$f"
+            cmp "dist/$f" "from-github/$f"
+          done
+          for f in from-cdn/*.mcpb; do
+            cosign verify-blob --bundle "$f.sigstore.json" \
+              --certificate-identity "$IDENTITY" --certificate-oidc-issuer "$ISSUER" "$f"
+          done
+          echo "both origins serve the signed, byte-identical release"
 
-            1. scripts/write-pins.sh <tag>   (hashes from dist/SHA256SUMS)
-            2. commit launcher/pins.json
-            3. update .claude-plugin/marketplace.json's commit pin
-               to that commit
+      - name: What has to happen next
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'MSG'
+          ### Published — not installable until pinned
 
-          Two commits by construction: the pins name a release that has
-          to exist first.
+          1. `scripts/write-pins.sh <tag>` with this run's `dist/` (`gh run download <run> -n dist -D dist`)
+          2. commit `plugins/airdress/launcher/pins.json` on main
+          3. `scripts/marketplace-pins.py pin <that commit>`, commit `.claude-plugin/marketplace.json`
           MSG
