@@ -64,8 +64,12 @@ quietly obliged.
 
 This release is the query half and the agent bus. Agent chat is
 designed and not built. Writing to the bus needs this machine approved
-as an agent device (`airdress agent device join`); without one, the bus
-can be read and not written, and the tools say so. An airdress can also have the editor path switched off,
+as an agent device, which is a separate binary from the `airdress` CLI:
+`airdress-agent`, released beside it for Linux and macOS (the one binary
+with the MLS engine; this plugin's server carries none). Join with
+`airdress-agent device join --state-dir <the plugin's data directory>` and
+keep `airdress-agent device serve` running. Without one, the bus can be
+read and not written, and the tools say so. An airdress can also have the editor path switched off,
 and then every tool answers one sentence saying so, with a link to the
 page where that is decided.
 
