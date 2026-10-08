@@ -1,6 +1,6 @@
 {
-  "comment": "The airdress-cli revision every server build uses: the tag AND the commit it must resolve to, so a moved tag stops the build instead of changing what ships. Read by server-build.yml (release and the reproducibility check alike). v0.1.0 is the first tag of airdress-cli's collapsed history (2026-10-07); every earlier tag is gone from that repository, so an older pin cannot be fetched. On 2026-10-08 that history was rewritten to conventional commits with identical trees, so v0.1.0 now names f5eed7e; the source it builds is byte for byte the same.",
+  "comment": "The airdress-cli revision every server build uses: the tag AND the commit it must resolve to, so a moved tag stops the build instead of changing what ships. Read by server-build.yml (release and the reproducibility check alike). v0.1.0 is the first tag of airdress-cli's collapsed history (2026-10-07); every earlier tag is gone from that repository, so an older pin cannot be fetched. On 2026-10-08 that history was rewritten to conventional commits with identical trees, so v0.1.0 now names f5eed7e; the source it builds is byte for byte the same. On 2026-10-09 the pin moved to v0.1.3: static musl Linux builds, and credentials kept by the real Secret Service rather than the keyring library's in-memory mock store that every earlier musl build used.",
   "repository": "airdress-co/airdress-cli",
-  "tag": "v0.1.0",
-  "commit": "f5eed7eaed42d4fb412a111c66d964bf0e789a89"
+  "tag": "v0.1.3",
+  "commit": "56885c888a0b4c1606254315323e5a9440a54bf1"
 }
