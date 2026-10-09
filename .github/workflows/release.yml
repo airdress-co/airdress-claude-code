@@ -129,11 +129,15 @@ jobs:
           cat dist/SHA256SUMS
           scripts/release-notes.sh "${GITHUB_REF_NAME#v}" > dist/NOTES.md
       - uses: sigstore/cosign-installer@v3
+      # `--new-bundle-format`: the protobuf Sigstore bundle, the only form
+      # the launcher parses. Without it cosign 2.x writes its legacy
+      # `{"base64Signature", "cert", "rekorBundle"}` file, which cosign
+      # itself verifies and no launcher can read: v0.1.1 shipped that way.
       - name: Sign every bundle, recorded in Rekor
         run: |
           set -euo pipefail
           for f in dist/*.mcpb dist/SHA256SUMS; do
-            cosign sign-blob --yes --bundle "$f.sigstore.json" "$f"
+            cosign sign-blob --yes --new-bundle-format --bundle "$f.sigstore.json" "$f"
           done
       # Verified here, with exactly what the launcher will pin, before
       # anything is published: an identity that does not match is a
@@ -142,7 +146,13 @@ jobs:
         run: |
           set -euo pipefail
           for f in dist/*.mcpb dist/SHA256SUMS; do
-            cosign verify-blob --bundle "$f.sigstore.json" \
+            # cosign accepts both bundle forms; the launcher only this one.
+            media=$(jq -r '.mediaType // "none"' "$f.sigstore.json")
+            case "$media" in
+              application/vnd.dev.sigstore.bundle.v0.3+json) ;;
+              *) echo "::error::$f.sigstore.json is not a Sigstore v0.3 bundle (mediaType $media): the launcher cannot read it"; exit 1 ;;
+            esac
+            cosign verify-blob --new-bundle-format --bundle "$f.sigstore.json" \
               --certificate-identity "$IDENTITY" \
               --certificate-oidc-issuer "$ISSUER" "$f"
           done
@@ -198,7 +208,7 @@ jobs:
           cd dist
           sha256sum -c SHA256SUMS
           for f in *.mcpb SHA256SUMS; do
-            cosign verify-blob --bundle "$f.sigstore.json" \
+            cosign verify-blob --new-bundle-format --bundle "$f.sigstore.json" \
               --certificate-identity "$IDENTITY" --certificate-oidc-issuer "$ISSUER" "$f"
           done
           slsa-verifier verify-artifact *.mcpb \
@@ -252,7 +262,7 @@ jobs:
             cmp "dist/$f" "from-github/$f"
           done
           for f in from-cdn/*.mcpb; do
-            cosign verify-blob --bundle "$f.sigstore.json" \
+            cosign verify-blob --new-bundle-format --bundle "$f.sigstore.json" \
               --certificate-identity "$IDENTITY" --certificate-oidc-issuer "$ISSUER" "$f"
           done
           echo "both origins serve the signed, byte-identical release"

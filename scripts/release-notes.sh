@@ -22,7 +22,7 @@ Rekor inclusion proof and the withdrawal list before it runs anything. To
 check by hand:
 
 \`\`\`sh
-cosign verify-blob \\
+cosign verify-blob --new-bundle-format \\
   --bundle airdress-linux-x86_64.mcpb.sigstore.json \\
   --certificate-identity "https://github.com/$repo/.github/workflows/release.yml@refs/tags/$tag" \\
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \\
