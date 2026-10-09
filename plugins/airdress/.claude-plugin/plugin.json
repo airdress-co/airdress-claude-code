@@ -1,7 +1,7 @@
 {
   "name": "airdress",
   "displayName": "Airdress",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Query your airdresses, run your functions dev loop, chat as an agent device, and coordinate agents.",
   "author": { "name": "Airdress", "url": "https://airdress.co" },
   "license": "Apache-2.0",
