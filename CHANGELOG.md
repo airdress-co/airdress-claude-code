@@ -4,6 +4,14 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
+## 0.1.1 — 2026-10-09
+
+- Published to both download origins. 0.1.0's publish step failed
+  before uploading to `downloads.airdress.co` (GitHub release
+  immutability was off), so 0.1.0 exists on GitHub Releases only and
+  no launcher pins it. 0.1.1 is the same source, released again so
+  that the first pinned version is served by both origins.
+
 ## 0.1.0 — 2026-10-09
 
 - Shell sessions: hooks that, inside an Airdress shell session only,
