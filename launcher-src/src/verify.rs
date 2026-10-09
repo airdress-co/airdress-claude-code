@@ -23,6 +23,7 @@
 
 use sigstore::bundle::verify::{blocking::Verifier, policy};
 use sigstore::bundle::Bundle;
+use sigstore::rekor::apis::configuration::Configuration as RekorConfiguration;
 use sigstore::trust::ManualTrustRoot;
 
 /// Sigstore's public-good trust root, as of this plugin release.
@@ -127,6 +128,37 @@ fn trust_root() -> Result<ManualTrustRoot<'static>, VerifyError> {
     })
 }
 
+/// The Rekor client configuration the verifier is built with.
+///
+/// Verification is offline, so this client never makes a request; it
+/// exists only because `Verifier::new` takes one. `Default::default()`
+/// would build it with `reqwest::Client::new()`, which loads the
+/// system's CA certificates and **panics** on a machine that has none
+/// (a minimal container, measured on Debian slim 2026-10-09). An
+/// offline check must not depend on the system trust store, so the
+/// client trusts no roots at all: if anything ever did use it, the TLS
+/// handshake would fail closed rather than trust a store we did not
+/// choose.
+fn offline_rekor_config() -> Result<RekorConfiguration, VerifyError> {
+    let client = reqwest::Client::builder()
+        .tls_certs_only(std::iter::empty())
+        .build()
+        .map_err(|e| VerifyError {
+            check: "trust root",
+            expected: "an offline verifier".into(),
+            actual: format!("could not set one up: {e}"),
+        })?;
+    Ok(RekorConfiguration {
+        base_path: String::new(),
+        user_agent: None,
+        client,
+        basic_auth: None,
+        oauth_access_token: None,
+        bearer_access_token: None,
+        api_key: None,
+    })
+}
+
 /// Verify one artifact.
 ///
 /// `bundle_json` is the Sigstore bundle as published beside it.
@@ -154,11 +186,12 @@ pub fn artifact(
         actual: format!("unreadable: {e}"),
     })?;
 
-    let verifier = Verifier::new(Default::default(), trust_root()?).map_err(|e| VerifyError {
-        check: "trust root",
-        expected: "a usable trust root".into(),
-        actual: format!("{e}"),
-    })?;
+    let verifier =
+        Verifier::new(offline_rekor_config()?, trust_root()?).map_err(|e| VerifyError {
+            check: "trust root",
+            expected: "a usable trust root".into(),
+            actual: format!("{e}"),
+        })?;
 
     // 2–4. Chain, identity, signature, Rekor inclusion. `offline` is
     //      true: the proof is in the bundle.
@@ -197,6 +230,19 @@ fn check_name(message: &str) -> &'static str {
 mod tests {
     use super::*;
 
+    /// The verifier needs no system trust store. With
+    /// `Default::default()` this panicked inside reqwest when run in a
+    /// container with no CA certificates (debian:stable-slim); the
+    /// workstation has them, so here it only proves the client builds.
+    #[test]
+    fn the_verifier_is_built_without_system_roots() {
+        Verifier::new(
+            offline_rekor_config().expect("a client with no roots"),
+            trust_root().unwrap(),
+        )
+        .expect("a verifier");
+    }
+
     #[test]
     fn the_embedded_trust_root_parses_and_carries_what_a_verifier_needs() {
         // The one thing that would make every verification fail at
@@ -220,7 +266,7 @@ mod tests {
     fn a_verifier_can_be_built_from_it() {
         trust_root()
             .and_then(|r| {
-                Verifier::new(Default::default(), r).map_err(|e| VerifyError {
+                Verifier::new(offline_rekor_config()?, r).map_err(|e| VerifyError {
                     check: "trust root",
                     expected: "a usable trust root".into(),
                     actual: format!("{e}"),
