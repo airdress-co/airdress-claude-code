@@ -27,11 +27,20 @@ jobs:
     timeout-minutes: 20
     runs-on: ubuntu-24.04
     steps:
+      # Not `ref: denylist`: checkout fails outright when the branch does
+      # not exist, which is exactly the first run (it failed that way on
+      # 2026-10-05 and every run since, so no list was ever published).
       - uses: actions/checkout@v4
         with:
-          ref: denylist
-          # The branch may not exist on the first run.
           fetch-depth: 0
+      - name: Switch to the denylist branch, creating it on the first run
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin denylist >/dev/null; then
+            git checkout -B denylist origin/denylist
+          else
+            git switch --orphan denylist
+          fi
 
       - name: Update the list
         env:
@@ -80,7 +89,7 @@ jobs:
       # workflow at all.
       - name: Sign
         run: |
-          cosign sign-blob --yes \
+          cosign sign-blob --yes --new-bundle-format \
             --bundle denylist.json.sigstore.json \
             denylist.json
 
