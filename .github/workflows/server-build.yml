@@ -57,9 +57,9 @@ jobs:
           print(f"commit={d['commit']}")
           PY
 
-      # airdress-cli is private until its publication task is done. Say
-      # that, rather than letting the checkout fail as if it were a
-      # permissions problem of this workflow.
+      # airdress-cli is public (since 2026-10-09). Should the pinned source
+      # ever stop being public, say that, rather than letting the checkout
+      # fail as if it were a permissions problem of this workflow.
       - name: The server's source is public
         run: |
           code=$(curl -s -o /dev/null -w '%{http_code}' "https://github.com/${{ steps.src.outputs.repository }}")
