@@ -4,6 +4,11 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
+## 0.1.3 — 2026-10-09
+
+- The launcher verifies offline without the system's CA certificates.
+  0.1.2's `airdress-mcp` panicked at start on a machine with none.
+
 ## 0.1.2 — 2026-10-09
 
 - Release signatures are protobuf Sigstore bundles (v0.3), the form the
