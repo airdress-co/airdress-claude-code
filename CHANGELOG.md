@@ -4,6 +4,15 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
+## 0.1.2 — 2026-10-09
+
+- Release signatures are protobuf Sigstore bundles (v0.3), the form the
+  launcher reads. 0.1.1's were cosign's legacy bundle, which cosign
+  verifies and the launcher refuses, so 0.1.1 was never pinned and no
+  install can start it.
+- The withdrawal list is published on both origins. Its workflow failed
+  at checkout on every run until now, so no list existed.
+
 ## 0.1.1 — 2026-10-09
 
 - Published to both download origins. 0.1.0's publish step failed
