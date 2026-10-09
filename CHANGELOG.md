@@ -4,7 +4,7 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
-## Unreleased
+## 0.1.0 — 2026-10-09
 
 - Shell sessions: hooks that, inside an Airdress shell session only,
   hand this session's events to the shell host on this machine through
