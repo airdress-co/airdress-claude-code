@@ -225,8 +225,8 @@ jobs:
           set -euo pipefail
           scripts/build-launchers.sh --write
           declare -A expected=(
-            [linux-x86_64]=18ac3d9adcbb3fb0098965917890ede9c0134d584ce84d7308ca1b03512f1175
-            [linux-aarch64]=c7f780812b52524cae0171f2d38aea43f001a50d352cb05766f082df613b4277
+            [linux-x86_64]=f860502e7eb3a4e43b52caec286841a816f68a770b05f5a12cde666b508b7a58
+            [linux-aarch64]=3538875404e726fb921c9395ff1e7621a96c40ab83f412f46fe9ae9e505fe62d
           )
           fail=0
           for platform in "${!expected[@]}"; do
