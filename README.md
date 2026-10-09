@@ -238,7 +238,7 @@ and gives the same answer everywhere. It deliberately does not use
 `codesign --remove-signature`, whose result differs between macOS
 versions (measured on `macos-15` and `macos-26`); its header says what
 else it found. With the signature aside, the committed launcher is
-`95748faaf036ac6ae031634f7ff42eacefb493062169320e9ee8816fba46e0ef`. CI makes that comparison on every pull request, and the
+`b16d7f05afcb22495212239bd39bfd3376872bc988bdb3e538d664b679f2a540`. CI makes that comparison on every pull request, and the
 signing workflow makes it before handing a signed binary back.
 
 Measured on a Mac on 2026-10-05: a quarantined copy of the committed
