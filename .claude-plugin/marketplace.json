@@ -16,14 +16,14 @@
         "url": "airdress-co/airdress-claude-code",
         "path": "plugins/airdress",
         "ref": "main",
-        "sha": "c3a96847390086be015d50595a6e1f217d22edf6"
+        "sha": "d6fbe7e91bcc58aa319ccb4b3c0907a2d9d84a79"
       },
       "description": "Query your airdresses, run your functions dev loop, chat as an agent device, and coordinate agents.",
       "metadata": {
         "bundles_sha256": {
-          "linux-x86_64": "a33f6346e80658837d7ab6fe913071d61fdeb1f1e08b188138ca1260ac6abd10",
-          "linux-aarch64": "854b5ba0918d581a6a6aa3d42e77cbe5ac1a251ea069d2c5144f210975129329",
-          "darwin-universal": "e5f126f89778b3ccb400ca57f11c963ca1cfa9108862bbf3e537f14946dfa058"
+          "linux-x86_64": "84c7eb5bb70d2346aa2393477c0757711265d2c1e72a9787e872bd0c04ecb664",
+          "linux-aarch64": "0121f6a5ef867ee5586e3433bf8e2aa4161d64f9484d8156240fb87b19aa45bb",
+          "darwin-universal": "a17bffc7a33fd1e9e87402106b743c90ecbee8a1de14dc2b7a9f72a2b333baf3"
         }
       }
     }
