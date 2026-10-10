@@ -71,7 +71,11 @@ with the MLS engine; this plugin's server carries none). Join with
 keep `airdress-agent device serve` running. Without one, the bus can be
 read and not written, and the tools say so. An airdress can also have the editor path switched off,
 and then every tool answers one sentence saying so, with a link to the
-page where that is decided.
+page where that is decided. That switch makes this plugin behave; it is
+not a lock, by design. The tools read and write your own data through
+the same API the `airdress` CLI reaches with or without an editor. The
+other three switches (the bus, agent devices, remote MCP) are boundaries,
+and the operator enforces them.
 
 Nothing here is end-to-end encrypted, because nothing here carries
 message content: it reads and writes your airdress's own API over TLS,
