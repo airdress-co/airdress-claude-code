@@ -4,6 +4,13 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
+## 0.1.4 — 2026-10-10
+
+- With an airdress's agent devices switched off, the chat tools say that
+  they are not enabled on this airdress, with the link to manage it,
+  instead of advising `airdress-agent device join`, which the airdress
+  would refuse. The server is built from airdress-cli v0.1.6.
+
 ## 0.1.3 — 2026-10-09
 
 - The launcher verifies offline without the system's CA certificates.
