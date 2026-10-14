@@ -46,6 +46,25 @@ ignore = [
     # `openidconnect` — removing it was attempted on 2026-10-04 and the
     # crate's feature graph does not allow it.
     { id = "RUSTSEC-2023-0071", reason = "a timing side-channel in RSA private-key operations; this binary performs none and holds no private key" },
+    # RUSTSEC-2026-0346 to 0349, 2026-10-14 — four rustls 0.23.45
+    # advisories, fixed in 0.23.46. Taking the fix means rebuilding the
+    # committed launchers (and notarizing the macOS one), which belongs
+    # with the next launcher change; none of the four reaches this
+    # binary meanwhile:
+    #   0346 `Debug` of client session values prints secrets — only
+    #        through a logger, and the launcher installs none;
+    #   0347 data after an ECH rejection — the launcher never offers ECH;
+    #   0348 Brotli certificate decompression — a non-default feature
+    #        not compiled in (`cargo tree -e features -i rustls`);
+    #   0349 a forged ServerHello downgrades later connections to
+    #        classical key exchange — confidentiality only, of public
+    #        downloads whose integrity rests on the pinned SHA-256 and
+    #        the Sigstore bundle, not on the TLS channel.
+    # Remove these with the next launcher rebuild.
+    { id = "RUSTSEC-2026-0346", reason = "rustls Debug leak needs a logger; the launcher installs none" },
+    { id = "RUSTSEC-2026-0347", reason = "rustls ECH issue; the launcher never offers ECH" },
+    { id = "RUSTSEC-2026-0348", reason = "rustls Brotli decompression; the feature is not compiled in" },
+    { id = "RUSTSEC-2026-0349", reason = "key-exchange downgrade affects confidentiality of public, hash-pinned downloads only" },
 ]
 
 [bans]

@@ -24,7 +24,7 @@ everything is as expected, the whole answer is two or three lines.
 **Add a line only for what is not as expected**, one line each:
 
 - the sign-in is not the hub's (`sign_in_kind` other than `hub`), or the
-  token is expired and not refreshable;
+  token has expired and cannot be renewed;
 - a capability that is off: say it is off on this airdress and give the
   link `whoami` carries. Do not guess at why, and do not mention plans
   or prices;
