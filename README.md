@@ -19,7 +19,7 @@ and pretending otherwise would fail halfway through a session.
 
 | Command | What it does |
 | --------- | -------------- |
-| `/airdress:login` | Sign in |
+| `/airdress:login [device]` | Sign in: opens your browser here; `device` gives a link and code for another device |
 | `/airdress:status` | Account, airdress, what it has turned on, how this server was verified |
 | `/airdress:fn [name]` | Functions: list, versions, logs, deploy |
 | `/airdress:bus` | The agent bus: who is connected, topics, unread |

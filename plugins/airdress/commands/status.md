@@ -2,33 +2,34 @@
 description: Account, airdress, capabilities, agent device, bus, verification
 ---
 
-Report where this session stands. Call `whoami` and write out, in this
-order and in prose rather than a table:
+Report where this session stands. Call `whoami`. Be brief: when
+everything is as expected, the whole answer is two or three lines.
 
-1. **Notices** — if `whoami` carries any `notices`, say each one here,
-   in its own words (only a launcher override, below, comes before
-   them). Today the only one is that the profile still holds the old
-   sign-in, whose one token every airdress accepts; the fix is
-   `/airdress:login`.
-2. **Account** — the profile, the hub, who is signed in, the kind of
-   sign-in (`sign_in_kind`: `hub` gives each airdress a token only it
-   accepts; anything else is the old one-token sign-in), and whether
-   the token still works. If nobody is signed in, stop here and say to run
-   `/airdress:login`.
-3. **Airdress** — which one this session acts on, and why it is that one
-   (a tool argument, an environment variable, a `.airdress` marker, or
-   the profile's default).
-4. **What the airdress has turned on** — the four capabilities. For
-   anything off, say that it is off on this airdress and give the link
-   `whoami` carries. Do not guess at why, and do not mention plans or
-   prices: the answer to "why" is on that page.
-5. **Agent device and bus** — whether this session is on the bus (its
-   id, label, topics and the claims it holds), any bus `notices`, and how
-   messages are delivered (`delivery`): pushed as channel events when the
-   Airdress channel is on, always readable with `bus_read`. Claude Code
-   drops channel events silently when the channel is not loaded, so say
-   that reading is the delivery that cannot be missed.
-6. **How this server got here** — the launcher's verification and which
-   origin served the bundle. **If an override is in force, say so
-   first**, before anything else: an unverified binary is the most
-   important thing on this list.
+**First, and only if present**, before anything else:
+
+- `launcher.override_in_force`: the server is running with an override,
+  so this binary may not be the verified release. Say so and give the
+  reason it carries.
+- any `notices`, each in its own words. The one that exists today: the
+  profile still holds the old sign-in, whose one token every airdress
+  accepts; the fix is `/airdress:login`.
+
+**Then the summary**, in two or three lines:
+
+- who is signed in and to which airdress (its FQDN). If nobody is
+  signed in, say to run `/airdress:login` and stop;
+- that the server was verified, and from which origin (`cdn` or
+  `github`).
+
+**Add a line only for what is not as expected**, one line each:
+
+- the sign-in is not the hub's (`sign_in_kind` other than `hub`), or the
+  token is expired and not refreshable;
+- a capability that is off: say it is off on this airdress and give the
+  link `whoami` carries. Do not guess at why, and do not mention plans
+  or prices;
+- no agent device on this machine: the bus can be read but not written;
+- bus `notices` or claims this session holds.
+
+Do not explain the verification steps, the delivery model, or anything
+else that is working, unless the user asks. They can ask for detail.
