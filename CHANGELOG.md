@@ -4,6 +4,17 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
+## 0.1.5 — 2026-10-14
+
+- `/airdress:login` opens your browser on the sign-in page and waits
+  for you to approve, then says who signed in, like any app's sign-in.
+  With no browser here (no display, a Mac over SSH) or with
+  `/airdress:login device`, it gives a link and a code for another
+  device, as before.
+- `/airdress:status` answers in two or three lines when everything is
+  as expected, and adds a line only for what is not.
+- The server is built from airdress-cli v0.1.7 (rustls 0.23.46).
+
 ## 0.1.4 — 2026-10-10
 
 - With an airdress's agent devices switched off, the chat tools say that
