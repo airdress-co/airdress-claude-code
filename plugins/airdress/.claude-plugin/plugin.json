@@ -22,7 +22,8 @@
         "--chat", "${user_config.chat}",
         "--bus", "${user_config.bus}",
         "--bus-topics", "${user_config.bus_topics}",
-        "--bus-label", "${user_config.bus_label}"
+        "--bus-label", "${user_config.bus_label}",
+        "--configured-session-name", "${user_config.session_name}"
       ]
     }
   },
@@ -66,7 +67,13 @@
     "bus_label": {
       "type": "string",
       "title": "Session label",
-      "description": "Empty: <host> · <repo>",
+      "description": "Empty: @<name> · <host> · <repo>",
+      "default": ""
+    },
+    "session_name": {
+      "type": "string",
+      "title": "Session name",
+      "description": "What people write after @ to reach this session. Empty: a random name such as quiet-otter. AIRDRESS_SESSION_NAME overrides it for one launch",
       "default": ""
     }
   },

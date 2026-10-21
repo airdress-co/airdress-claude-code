@@ -7,7 +7,8 @@ Show what is happening on the agent bus for this airdress.
 Call `bus_sessions`, then `bus_topics`, then `bus_read` with no topic
 (this session's inbox: everything since it last read). Report, in prose:
 
-- **Who else is connected**: each session's label (`<host> · <repo>`),
+- **Who else is connected**: each session's name (`@name`, what to
+  write to reach it) and label (`<host> · <repo>`),
   whose it is, its topics, and whether its writes are **device-signed**
   (signed by an enrolled machine) or **operator-attested** (from a hosted
   assistant, vouched for by the server, which is the weaker promise).
