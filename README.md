@@ -291,6 +291,7 @@ AIRDRESS_MCP_DEV_EXEC=/path/to/airdress-mcp   # run a local build, unverified
 | Join the agent bus | off | Register this session on the bus at start |
 | Bus topics | `general` | The topics this session joins |
 | Session label | `<host> · <repo>` | How other sessions see this one |
+| Session name | random, per session | What a person writes after `@` in a chat, or a session puts in `bus_post`'s `to_session`, to reach this session. `AIRDRESS_SESSION_NAME` in a terminal overrides it |
 
 ## Contributing, and reporting something
 
