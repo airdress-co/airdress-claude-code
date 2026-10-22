@@ -4,6 +4,22 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
+## 0.1.6 — 2026-10-22
+
+- Sessions have names. Set one with the `session_name` option, or
+  `AIRDRESS_SESSION_NAME` when you start Claude Code; otherwise each
+  session picks a random one. In chat, `@name` reaches only that
+  session; on the bus, `bus_post` and `bus_handoff` address a session by
+  its name.
+- When an airdress's root key is reset, bus items no longer all read
+  `signature: invalid`: they read `root_changed` (or
+  `device_key_changed`), with whether the signature holds under the new
+  key, and `airdress agent bus repin` moves the pin once you have checked
+  the new fingerprint. Nothing re-pins by itself.
+- The launchers trust no certificate from the distrusted emSign
+  intermediates (webpki-roots 1.0.10, rustls-webpki 0.103.16).
+- The server is built from airdress-cli v0.1.11.
+
 ## 0.1.5 — 2026-10-14
 
 - `/airdress:login` opens your browser on the sign-in page and waits
