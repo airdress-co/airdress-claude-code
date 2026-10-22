@@ -297,7 +297,8 @@ AIRDRESS_MCP_DEV_EXEC=/path/to/airdress-mcp   # run a local build, unverified
 
 The server is in
 [airdress-cli](https://github.com/airdress-co/airdress-cli); this
-repository is the plugin and its launcher. Security reports:
+repository is the plugin and its launcher. Changing the launcher and
+cutting a release: [CONTRIBUTING.md](./CONTRIBUTING.md). Security reports:
 [SECURITY.md](./SECURITY.md).
 
 Apache-2.0. "Claude" and "Claude Code" are trademarks of Anthropic, PBC;
