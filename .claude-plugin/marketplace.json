@@ -13,7 +13,7 @@
       "name": "airdress",
       "source": {
         "source": "git-subdir",
-        "url": "airdress-co/airdress-claude-code",
+        "url": "https://github.com/airdress-co/airdress-claude-code.git",
         "path": "plugins/airdress",
         "ref": "main",
         "sha": "632ab2d3fb01b21cd4768cfe7e1e6b6361f4d676"
