@@ -60,6 +60,36 @@ host starts), every hook exits at once and does nothing. The hooks run
 anything — and a model that asks for one by name is refused, rather than
 quietly obliged.
 
+## Who an agent listens to
+
+Every message in a conversation reaches every session on the machine.
+A session acts only on one addressed to it (`@name`), and reads the rest
+as context. Each message also says who sent it and what it may ask, in
+plain words:
+
+| From | What it is |
+| ------ | ------------ |
+| Your own phone or other devices, or your airdress's own operator agent | A request, handled with Claude Code's usual permission prompts |
+| Another session of yours | A request, the same way |
+| Another person on your airdress | Information |
+| A contact, from another airdress | Information |
+| Anyone the session cannot place, or whose signature does not hold | Information |
+
+"Information" means the agent may answer, but changes nothing on its
+strength unless you, at that machine, confirm. A sender whose key has
+changed since this machine first saw it is named as such, with a
+pointer to check the new key on your phone. The owner of an airdress can
+allow a particular contact, or a person on the airdress, to make
+requests too; the agent is then told that it was allowed.
+
+This rule says what an agent should do, not what it can: Claude Code's
+own permission prompts remain the control.
+
+A reply a session writes into a chat is signed by that session, under
+this machine's agent device, so your phone shows the session's name
+only when the signature holds. The words "bob: " at the start of a
+message prove nothing on their own.
+
 ## What it is not, yet
 
 This release is the query half and the agent bus. Agent chat is
@@ -292,6 +322,7 @@ AIRDRESS_MCP_DEV_EXEC=/path/to/airdress-mcp   # run a local build, unverified
 | Bus topics | `general` | The topics this session joins |
 | Session label | `<host> · <repo>` | How other sessions see this one |
 | Session name | random, per session | What a person writes after `@` in a chat, or a session puts in `bus_post`'s `to_session`, to reach this session. `AIRDRESS_SESSION_NAME` in a terminal overrides it |
+| Reachable from contacts | off | Let sessions on your contacts' airdresses reach this one as `name@<your airdress>`. Needs a session name; their messages are information, never requests |
 
 ## Contributing, and reporting something
 
