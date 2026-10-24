@@ -46,38 +46,14 @@ ignore = [
     # `openidconnect` — removing it was attempted on 2026-10-04 and the
     # crate's feature graph does not allow it.
     { id = "RUSTSEC-2023-0071", reason = "a timing side-channel in RSA private-key operations; this binary performs none and holds no private key" },
-    # RUSTSEC-2026-0346 to 0349, 2026-10-14 — four rustls 0.23.45
-    # advisories, fixed in 0.23.46. Taking the fix means rebuilding the
-    # committed launchers (and notarizing the macOS one), which belongs
-    # with the next launcher change; none of the four reaches this
-    # binary meanwhile:
-    #   0346 `Debug` of client session values prints secrets — only
-    #        through a logger, and the launcher installs none;
-    #   0347 data after an ECH rejection — the launcher never offers ECH;
-    #   0348 Brotli certificate decompression — a non-default feature
-    #        not compiled in (`cargo tree -e features -i rustls`);
-    #   0349 a forged ServerHello downgrades later connections to
-    #        classical key exchange — confidentiality only, of public
-    #        downloads whose integrity rests on the pinned SHA-256 and
-    #        the Sigstore bundle, not on the TLS channel.
-    # Remove these with the next launcher rebuild.
-    { id = "RUSTSEC-2026-0346", reason = "rustls Debug leak needs a logger; the launcher installs none" },
-    { id = "RUSTSEC-2026-0347", reason = "rustls ECH issue; the launcher never offers ECH" },
-    { id = "RUSTSEC-2026-0348", reason = "rustls Brotli decompression; the feature is not compiled in" },
-    { id = "RUSTSEC-2026-0349", reason = "key-exchange downgrade affects confidentiality of public, hash-pinned downloads only" },
-    # RUSTSEC-2026-0367 to 0369, 2026-10-19 — `zip` 2.x: set-user-ID bits
-    # kept, symlinks created with targets outside the destination, and
-    # Unix modes applied through symlinks, all in `ZipArchive::extract`
-    # and `ZipStreamReader::extract`. Fixed in zip 9, a major upgrade
-    # that belongs with the next launcher rebuild. The launcher calls
-    # neither: `extract` in main.rs walks the entries itself, refuses any
-    # name `enclosed_name` rejects, writes regular files only, creates no
-    # symlink and applies no mode from the archive (it sets 0700 on the
-    # server itself). And it unpacks only a bundle whose SHA-256 and
-    # Sigstore bundle have already verified.
-    { id = "RUSTSEC-2026-0367", reason = "only in ZipArchive::extract; the launcher extracts entry by entry and applies no archive mode" },
-    { id = "RUSTSEC-2026-0368", reason = "only in ZipArchive::extract; the launcher creates no symlinks" },
-    { id = "RUSTSEC-2026-0369", reason = "only in the extract helpers; the launcher applies no archive permissions" },
+    # RUSTSEC-2026-0387, 2026-10-24 — crypto-bigint 0.5: timing
+    # variability in operations meant to be constant-time, fixed only in
+    # 0.7.6. 0.5 arrives through `sigstore` -> `p256`/`p384`/`ecdsa` 0.13,
+    # which this binary uses to VERIFY ECDSA signatures and certificate
+    # chains over public data. It holds no private key, so a timing
+    # difference has no secret to reveal. Remove when sigstore moves to
+    # the 0.14 RustCrypto curves.
+    { id = "RUSTSEC-2026-0387", reason = "crypto-bigint 0.5 only verifies public ECDSA signatures here; no secret passes through it" },
 ]
 
 [bans]

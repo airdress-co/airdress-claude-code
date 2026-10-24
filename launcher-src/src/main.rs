@@ -255,7 +255,10 @@ fn extract(bytes: &[u8], into: &Path) -> Result<(), String> {
             .map_err(|e| format!("the bundle is damaged: {e}"))?;
         // A path from an archive decides where a write lands, so it is
         // not trusted: no absolute paths, no `..`, no symlinks.
-        let name = entry.name().to_owned();
+        let name = entry
+            .name()
+            .map_err(|e| format!("the bundle holds an unreadable name: {e}"))?
+            .into_owned();
         let relative = entry
             .enclosed_name()
             .ok_or_else(|| format!("the bundle holds an unsafe path: {name}"))?;
