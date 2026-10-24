@@ -92,14 +92,14 @@ message prove nothing on their own.
 
 ## What it is not, yet
 
-This release is the query half and the agent bus. Agent chat is
-designed and not built. Writing to the bus needs this machine approved
-as an agent device, which is a separate binary from the `airdress` CLI:
-`airdress-agent`, released beside it for Linux and macOS (the one binary
-with the MLS engine; this plugin's server carries none). Join with
-`airdress-agent device join --state-dir <the plugin's data directory>` and
-keep `airdress-agent device serve` running. Without one, the bus can be
-read and not written, and the tools say so. An airdress can also have the editor path switched off,
+Writing to the bus and chatting need this machine approved as an agent
+device, which is a separate binary: `airdress-agent`, released with the
+`airdress` CLI for Linux and macOS (the one binary with the MLS engine;
+this plugin's server carries none). Put it in `~/.local/bin`, run
+`airdress-agent device join --state-dir <the plugin's data directory>`
+once and approve it on your phone. After that the plugin starts the
+device host itself. Without a device, the bus can be read and not
+written, and the tools say what to do. An airdress can also have the editor path switched off,
 and then every tool answers one sentence saying so, with a link to the
 page where that is decided. That switch makes this plugin behave; it is
 not a lock, by design. The tools read and write your own data through
@@ -318,7 +318,7 @@ AIRDRESS_MCP_DEV_EXEC=/path/to/airdress-mcp   # run a local build, unverified
 | Default airdress | resolved | Which airdress a tool acts on when it names none |
 | Read only | off | Remove every tool that changes anything |
 | Agent chat | on | For a later release |
-| Join the agent bus | off | Register this session on the bus at start |
+| Join the agent bus | on | Register this session on the bus at start, so your phone and your other sessions see it by name. Off keeps a session to itself |
 | Bus topics | `general` | The topics this session joins |
 | Session label | `<host> · <repo>` | How other sessions see this one |
 | Session name | random, per session | What a person writes after `@` in a chat, or a session puts in `bus_post`'s `to_session`, to reach this session. `AIRDRESS_SESSION_NAME` in a terminal overrides it. Every session of yours on this machine shares this setting: one that finds it held by another session takes a random name instead |
