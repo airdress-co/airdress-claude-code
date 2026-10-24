@@ -190,8 +190,8 @@ a build that only reproduces in one place fails.
 
 | Platform | SHA-256 | Reproduces |
 | --- | --- | --- |
-| `linux-x86_64` | `b1667dd9c8c68750d4c2baab80bd44e2228ac68b1eeba16768da57435bcaf979` | yes, in its pinned image |
-| `linux-aarch64` | `9f4ca002af9719aa454e53967b2d2b0334e797e6252b2e2cfed243704e222088` | yes, in its pinned image |
+| `linux-x86_64` | `e5e6d9128f2507104c0e98d850d85bd9b38b8c9e3c09b1a596d9ee4747c9c8cf` | yes, in its pinned image |
+| `linux-aarch64` | `60e4cdeaec1e2522bcbeb7e42bd934ae0f2c5a33c06bfd9ea2bf0f4f45eef6c4` | yes, in its pinned image |
 | `darwin-universal` | `c3f17d81967a07dfbc2bedd859cad000c338a9baebbdc6ca3a5fca1fa04a833f` (signed) | only with Xcode 26.3 (17C529), and with the signature aside — weaker than an image: two machines agreeing, not a pinned toolchain |
 
 **Why the C toolchain has to be pinned.** `sigstore`'s certificate
