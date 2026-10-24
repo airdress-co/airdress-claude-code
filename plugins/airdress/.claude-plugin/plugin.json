@@ -23,7 +23,8 @@
         "--bus", "${user_config.bus}",
         "--bus-topics", "${user_config.bus_topics}",
         "--bus-label", "${user_config.bus_label}",
-        "--configured-session-name", "${user_config.session_name}"
+        "--configured-session-name", "${user_config.session_name}",
+        "--reachable-from-contacts", "${user_config.reachable_from_contacts}"
       ]
     }
   },
@@ -75,6 +76,12 @@
       "title": "Session name",
       "description": "What people write after @ to reach this session. Empty: a random name such as quiet-otter. AIRDRESS_SESSION_NAME overrides it for one launch",
       "default": ""
+    },
+    "reachable_from_contacts": {
+      "type": "boolean",
+      "title": "Reachable from your contacts' airdresses",
+      "description": "Let sessions on airdresses you have a conversation with reach this session as name@your-airdress. Needs a session name, and an operator that is paired with theirs",
+      "default": false
     }
   },
   "commands": {
