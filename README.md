@@ -192,7 +192,7 @@ a build that only reproduces in one place fails.
 | --- | --- | --- |
 | `linux-x86_64` | `e5e6d9128f2507104c0e98d850d85bd9b38b8c9e3c09b1a596d9ee4747c9c8cf` | yes, in its pinned image |
 | `linux-aarch64` | `60e4cdeaec1e2522bcbeb7e42bd934ae0f2c5a33c06bfd9ea2bf0f4f45eef6c4` | yes, in its pinned image |
-| `darwin-universal` | `c3f17d81967a07dfbc2bedd859cad000c338a9baebbdc6ca3a5fca1fa04a833f` (signed) | only with Xcode 26.3 (17C529), and with the signature aside — weaker than an image: two machines agreeing, not a pinned toolchain |
+| `darwin-universal` | `82dd206412828949d40a38480602a1a7bc3cfa5aba7658eb3ae0d004dd0bc647` (signed) | only with Xcode 26.3 (17C529), and with the signature aside — weaker than an image: two machines agreeing, not a pinned toolchain |
 
 **Why the C toolchain has to be pinned.** `sigstore`'s certificate
 verification reaches a C library (`aws-lc-sys`) by three independent
