@@ -56,8 +56,8 @@
     "bus": {
       "type": "boolean",
       "title": "Join the agent bus",
-      "description": "Register this session on the agent bus at start",
-      "default": false
+      "description": "Register this session on the agent bus at start, so your phone and your other sessions can reach it by name",
+      "default": true
     },
     "bus_topics": {
       "type": "string",
