@@ -32,6 +32,12 @@ import subprocess
 import sys
 
 REPO = "airdress-co/airdress-claude-code"
+# The marketplace entry's source: a full HTTPS URL, not the GitHub short
+# name. Claude Code clones a git-subdir source given as `owner/repo` over
+# SSH, which fails for anyone without a GitHub SSH key and host key
+# (measured on a fresh account, 2026-10-24), although adding the
+# marketplace itself falls back to HTTPS.
+SOURCE_URL = f"https://github.com/{REPO}.git"
 MARKET = pathlib.Path(".claude-plugin/marketplace.json")
 SUBDIR = "plugins/airdress"
 PINS = "plugins/airdress/launcher/pins.json"
@@ -109,10 +115,10 @@ def check() -> int:
     elif isinstance(source, dict):
         if (
             source.get("source") != "git-subdir"
-            or source.get("url") != REPO
+            or source.get("url") != SOURCE_URL
             or source.get("path") != SUBDIR
         ):
-            errors.append(f"the entry must be git-subdir {REPO} {SUBDIR}, found {source}")
+            errors.append(f"the entry must be git-subdir {SOURCE_URL} {SUBDIR}, found {source}")
         sha = source.get("sha", "")
         if not SHA1.match(sha):
             errors.append(f"the entry's sha {sha!r} is not a full commit")
@@ -167,7 +173,7 @@ def pin(commit: str) -> int:
     (entry,) = market["plugins"]
     entry["source"] = {
         "source": "git-subdir",
-        "url": REPO,
+        "url": SOURCE_URL,
         "path": SUBDIR,
         "ref": "main",
         "sha": sha,
