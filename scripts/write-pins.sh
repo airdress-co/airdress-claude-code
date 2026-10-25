@@ -49,9 +49,40 @@ for platform in ("linux-x86_64", "linux-aarch64", "darwin-universal"):
         "cert_issuer": issuer,
     }
 
+# The agent device binary of the same airdress-cli release the server is
+# built from (server-src.json). The server installs it from these pins, so
+# a person never fetches it (SPEC-166 F.2). Hashed from both origins, which
+# must agree with each other and with the release's own .sha256.
+import hashlib, urllib.request
+
+src = json.loads(pathlib.Path("server-src.json").read_text())
+cli_tag = src["tag"]
+agent_origins = [
+    f"https://downloads.airdress.co/airdress-cli/{cli_tag}/",
+    f"https://github.com/airdress-co/airdress-cli/releases/download/{cli_tag}/",
+]
+
+def fetch(url):
+    with urllib.request.urlopen(url, timeout=120) as r:
+        return r.read()
+
+agent_files = {}
+for key, name in (
+    ("linux-x86_64", "airdress-agent-linux-amd64"),
+    ("linux-aarch64", "airdress-agent-linux-arm64"),
+    ("darwin-x86_64", "airdress-agent-darwin-amd64"),
+    ("darwin-aarch64", "airdress-agent-darwin-arm64"),
+):
+    digests = {hashlib.sha256(fetch(o + name)).hexdigest() for o in agent_origins}
+    published = fetch(agent_origins[1] + name + ".sha256").decode().split()[0].lower()
+    if digests != {published}:
+        sys.exit(f"{name}: the origins and the published .sha256 disagree: {digests} vs {published}")
+    agent_files[key] = {"name": name, "sha256": published}
+
 pins = {
     "version": version,
     "platforms": platforms,
+    "agent": {"version": cli_tag, "origins": agent_origins, "files": agent_files},
     "denylist": {
         "list": {
             "cdn": "https://downloads.airdress.co/claude-code/denylist.json",
@@ -74,6 +105,9 @@ out.write_text(json.dumps(pins, indent=2) + "\n")
 print(f"wrote {out} for {tag}")
 for platform, p in platforms.items():
     print(f"  {platform} {p['sha256']}")
+print(f"  airdress-agent {cli_tag}")
+for key, f in agent_files.items():
+    print(f"  {key} {f['sha256']}")
 PY
 
 echo
