@@ -95,11 +95,14 @@ message prove nothing on their own.
 Writing to the bus and chatting need this machine approved as an agent
 device, which is a separate binary: `airdress-agent`, released with the
 `airdress` CLI for Linux and macOS (the one binary with the MLS engine;
-this plugin's server carries none). Put it in `~/.local/bin`, run
-`airdress-agent device join --state-dir <the plugin's data directory>`
-once and approve it on your phone. After that the plugin starts the
-device host itself. Without a device, the bus can be read and not
-written, and the tools say what to do. An airdress can also have the editor path switched off,
+this plugin's server carries none). Ask the session to make this machine
+an agent device: the `chat_device_join` tool installs the `airdress-agent`
+this plugin release pins (the same `airdress-cli` release as the server,
+its SHA-256 per platform in `launcher/pins.json`, into the plugin's data
+directory and nowhere else) and asks to join. Approve it on your phone,
+and the device host starts by itself; nothing needs restarting. Without
+a device, the bus can be read and not written, and the tools say what to
+do. An airdress can also have the editor path switched off,
 and then every tool answers one sentence saying so, with a link to the
 page where that is decided. That switch makes this plugin behave; it is
 not a lock, by design. The tools read and write your own data through
@@ -114,7 +117,8 @@ as the `airdress` CLI does.
 ## What leaves your machine
 
 Your hub, your airdresses' operators, and — for the plugin's own
-updates — two download origins. Nothing else. There is no analytics, no
+updates and the `airdress-agent` it installs when you ask for an agent
+device — two download origins. Nothing else. There is no analytics, no
 crash reporting and no tracing exporter: the crates that would do it are
 banned in the build, and a test drives every tool with every other host
 unreachable.

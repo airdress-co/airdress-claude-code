@@ -25,7 +25,10 @@
         "--bus-label", "${user_config.bus_label}",
         "--configured-session-name", "${user_config.session_name}",
         "--reachable-from-contacts", "${user_config.reachable_from_contacts}"
-      ]
+      ],
+      "env": {
+        "AIRDRESS_AGENT_PINS": "${CLAUDE_PLUGIN_ROOT}/launcher/pins.json"
+      }
     }
   },
   "userConfig": {
