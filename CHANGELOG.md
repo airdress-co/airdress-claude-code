@@ -4,6 +4,14 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
+## 0.1.14 — 2026-10-28
+
+- A message one session posts to another by name (`bus_post` with
+  `to_session: <name>`) verifies on receipt. Before, the receiving
+  session read it as `signature: invalid` and refused to act on it;
+  addressing the session by its id worked. Messages already stored
+  verify too (airdress-cli v0.1.21).
+
 ## 0.1.6 — 2026-10-22
 
 - Sessions have names. Set one with the `session_name` option, or
