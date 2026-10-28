@@ -2,6 +2,10 @@ config:
   # Long prose lines are fine; this repository's Markdown is read on a
   # web page, not in an 80-column terminal.
   MD013: false
+  # A closed <details> box carries a tidbit beside a step (the README's
+  # channel notes); GitHub renders it, and nothing else inline is allowed.
+  MD033:
+    allowed_elements: [details, summary]
 globs:
   - "**/*.md"
 ignores:
