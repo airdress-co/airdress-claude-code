@@ -1,44 +1,69 @@
 {
-  "version": "0.1.12",
+  "version": "0.1.13",
   "platforms": {
     "linux-x86_64": {
-      "sha256": "cc2cbf40bb1890bdecfeca4d1af224013ce1d747e4d761b2c9df7ba30d1a594e",
+      "sha256": "2784c80361f25e3436d3b825860bd421243c2fa321798646454ae524acb04b97",
       "bundle": {
-        "cdn": "https://downloads.airdress.co/claude-code/v0.1.12/airdress-linux-x86_64.mcpb",
-        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.12/airdress-linux-x86_64.mcpb"
+        "cdn": "https://downloads.airdress.co/claude-code/v0.1.13/airdress-linux-x86_64.mcpb",
+        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.13/airdress-linux-x86_64.mcpb"
       },
       "sigstore": {
-        "cdn": "https://downloads.airdress.co/claude-code/v0.1.12/airdress-linux-x86_64.mcpb.sigstore.json",
-        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.12/airdress-linux-x86_64.mcpb.sigstore.json"
+        "cdn": "https://downloads.airdress.co/claude-code/v0.1.13/airdress-linux-x86_64.mcpb.sigstore.json",
+        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.13/airdress-linux-x86_64.mcpb.sigstore.json"
       },
-      "cert_identity": "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml@refs/tags/v0.1.12",
+      "cert_identity": "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml@refs/tags/v0.1.13",
       "cert_issuer": "https://token.actions.githubusercontent.com"
     },
     "linux-aarch64": {
-      "sha256": "4f0c0af1f30c90a7f0cf0588e1afb34593d026fd5a5a2eb56b6fc108e0950816",
+      "sha256": "f269b46d57103337778a73224d6e10917e85f9446c970b2c78894bcc5c3002ca",
       "bundle": {
-        "cdn": "https://downloads.airdress.co/claude-code/v0.1.12/airdress-linux-aarch64.mcpb",
-        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.12/airdress-linux-aarch64.mcpb"
+        "cdn": "https://downloads.airdress.co/claude-code/v0.1.13/airdress-linux-aarch64.mcpb",
+        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.13/airdress-linux-aarch64.mcpb"
       },
       "sigstore": {
-        "cdn": "https://downloads.airdress.co/claude-code/v0.1.12/airdress-linux-aarch64.mcpb.sigstore.json",
-        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.12/airdress-linux-aarch64.mcpb.sigstore.json"
+        "cdn": "https://downloads.airdress.co/claude-code/v0.1.13/airdress-linux-aarch64.mcpb.sigstore.json",
+        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.13/airdress-linux-aarch64.mcpb.sigstore.json"
       },
-      "cert_identity": "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml@refs/tags/v0.1.12",
+      "cert_identity": "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml@refs/tags/v0.1.13",
       "cert_issuer": "https://token.actions.githubusercontent.com"
     },
     "darwin-universal": {
-      "sha256": "bafeb3792a0b6280cf7d3ae08acecba20bb0cc54015c19fb48525c6cddf2e33f",
+      "sha256": "420872003f1249f2909748ff51769dcd7c0a96ea91ddee49ad5398550233faf4",
       "bundle": {
-        "cdn": "https://downloads.airdress.co/claude-code/v0.1.12/airdress-darwin-universal.mcpb",
-        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.12/airdress-darwin-universal.mcpb"
+        "cdn": "https://downloads.airdress.co/claude-code/v0.1.13/airdress-darwin-universal.mcpb",
+        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.13/airdress-darwin-universal.mcpb"
       },
       "sigstore": {
-        "cdn": "https://downloads.airdress.co/claude-code/v0.1.12/airdress-darwin-universal.mcpb.sigstore.json",
-        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.12/airdress-darwin-universal.mcpb.sigstore.json"
+        "cdn": "https://downloads.airdress.co/claude-code/v0.1.13/airdress-darwin-universal.mcpb.sigstore.json",
+        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.13/airdress-darwin-universal.mcpb.sigstore.json"
       },
-      "cert_identity": "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml@refs/tags/v0.1.12",
+      "cert_identity": "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml@refs/tags/v0.1.13",
       "cert_issuer": "https://token.actions.githubusercontent.com"
+    }
+  },
+  "agent": {
+    "version": "v0.1.20",
+    "origins": [
+      "https://downloads.airdress.co/airdress-cli/v0.1.20/",
+      "https://github.com/airdress-co/airdress-cli/releases/download/v0.1.20/"
+    ],
+    "files": {
+      "linux-x86_64": {
+        "name": "airdress-agent-linux-amd64",
+        "sha256": "b671636d922262129f93697c963494e5af28f8f19f744322c79265d309723aa5"
+      },
+      "linux-aarch64": {
+        "name": "airdress-agent-linux-arm64",
+        "sha256": "9c7b089e0cd89376b95bffe1e703379823d3f77031b5b964521b02e74500832a"
+      },
+      "darwin-x86_64": {
+        "name": "airdress-agent-darwin-amd64",
+        "sha256": "f7e4f26b3cd1218f5b2189a1918eced71e05ea8da9666f346c591d6ca0b4aa89"
+      },
+      "darwin-aarch64": {
+        "name": "airdress-agent-darwin-arm64",
+        "sha256": "8f52c2cac98a6c29457cc484b4b394a0fc4bc6018fc117a85cb89155a9105771"
+      }
     }
   },
   "denylist": {
