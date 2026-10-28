@@ -10,6 +10,51 @@ leaving the session you are already in.
 /airdress:login
 ```
 
+To have your phone and your other sessions reach this one by name
+(`@build` in Airdress Chat), start Claude Code with the Airdress channel:
+
+```sh
+claude --dangerously-load-development-channels plugin:airdress@airdress
+```
+
+Claude Code asks you to confirm at each start: choose **I am using this
+for local development**. Without the channel every tool still works, and
+messages wait for `bus_read` and `chat_read`.
+[Quickstart, with screenshots](https://docs.airdress.co/agents/quickstart/).
+
+<details>
+<summary>Why the flag says "dangerously"</summary>
+
+A channel puts messages into your session without you asking for them.
+Claude Code loads one without a warning only from plugins on Anthropic's
+list, and Airdress is not on it yet. Every message says who sent it: the
+session treats a request from your own devices as a request, and anything
+from another person as information, which changes nothing until you
+confirm it at this machine ([who an agent listens to](#who-an-agent-listens-to)).
+
+</details>
+
+<details>
+<summary>Start it without typing the flag</summary>
+
+An alias saves the typing; Claude Code still asks you to confirm at each
+start.
+
+```sh
+alias claude-airdress='claude --dangerously-load-development-channels plugin:airdress@airdress'
+```
+
+</details>
+
+<details>
+<summary>On a Team or Enterprise plan</summary>
+
+An admin can allow the plugin in the organisation's managed settings
+(`channelsEnabled` and `allowedChannelPlugins`). You then start with
+`claude --channels plugin:airdress@airdress`, and no warning appears.
+
+</details>
+
 Linux and macOS. On Windows, connect over
 [remote MCP](https://airdress.co/docs/claude) instead — the local path
 needs a device host and a keychain this plugin does not have there yet,
