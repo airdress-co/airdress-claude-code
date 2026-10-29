@@ -4,6 +4,21 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
+## 0.1.15 — 2026-10-29
+
+- Replies. A reply from the chat app names the message it answers, and the
+  session receives the quoted text with it (`chat_read` returns
+  `reply_to`; a pushed message carries `in_reply_to`, `quoted_from`,
+  `quoted_text` and `quoted_resolved`). A reply to a session's own
+  message wakes that session, and an `@`-mention in the reply wakes the
+  one mentioned too. A session replies to a message with `chat_send`'s
+  new `reply_to`.
+- A session's signature on a reply covers what it answers, so a quote
+  cannot be swapped after signing; plain messages are signed as before.
+  The device host refuses to send a quote that does not match its own
+  copy of the message (`reply_mismatch`).
+- airdress-cli v0.1.22, on airdress-mls 0.6.0.
+
 ## 0.1.14 — 2026-10-28
 
 - A message one session posts to another by name (`bus_post` with
