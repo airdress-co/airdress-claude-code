@@ -4,6 +4,15 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
+## 0.1.16 — 2026-10-30
+
+- A session's markdown reads as formatted text in the chat app: headings,
+  lists, emphasis, links, code blocks and dividers. The device host sends
+  a formatted form beside the plain text; the session's signature still
+  covers the text, and the app shows the formatted form only once that
+  signature verifies. Copy as Markdown gives back what the session wrote.
+- airdress-cli v0.1.23.
+
 ## 0.1.15 — 2026-10-29
 
 - Replies. A reply from the chat app names the message it answers, and the
