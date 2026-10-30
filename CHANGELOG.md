@@ -4,6 +4,15 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
+## 0.1.17 — 2026-10-30
+
+- A plugin update brings its airdress-agent. A session now installs the
+  agent this release pins, hash-checked as on first install, when the
+  plugin's copy is missing or older; before, an update kept the machine's
+  older agent and missed what the newer one does. A device host already
+  running keeps its binary until its session ends.
+- airdress-cli v0.1.24.
+
 ## 0.1.16 — 2026-10-30
 
 - A session's markdown reads as formatted text in the chat app: headings,
