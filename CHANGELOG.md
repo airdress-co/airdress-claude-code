@@ -4,6 +4,15 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
+## 0.1.18 — 2026-10-31
+
+- A session joins a new conversation again. A starting device host now
+  retires the key packages it published earlier and offers the ones it
+  holds; before, the operator could hand a phone an old key package the
+  device could not open, the invitation failed, and the session never saw
+  the conversation.
+- airdress-cli v0.1.25.
+
 ## 0.1.17 — 2026-10-30
 
 - A plugin update brings its airdress-agent. A session now installs the
