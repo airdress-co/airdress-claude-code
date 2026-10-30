@@ -1,68 +1,68 @@
 {
-  "version": "0.1.17",
+  "version": "0.1.19",
   "platforms": {
     "linux-x86_64": {
-      "sha256": "b48745d1da0c4eec4aa466fca0fcffdbff588cae443ff56cd64ef5b8fad718d5",
+      "sha256": "a7d12b41eadf2f328542a76a9244946954e6fc5e71e09c8843dedbad43dc1200",
       "bundle": {
-        "cdn": "https://downloads.airdress.co/claude-code/v0.1.17/airdress-linux-x86_64.mcpb",
-        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.17/airdress-linux-x86_64.mcpb"
+        "cdn": "https://downloads.airdress.co/claude-code/v0.1.19/airdress-linux-x86_64.mcpb",
+        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.19/airdress-linux-x86_64.mcpb"
       },
       "sigstore": {
-        "cdn": "https://downloads.airdress.co/claude-code/v0.1.17/airdress-linux-x86_64.mcpb.sigstore.json",
-        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.17/airdress-linux-x86_64.mcpb.sigstore.json"
+        "cdn": "https://downloads.airdress.co/claude-code/v0.1.19/airdress-linux-x86_64.mcpb.sigstore.json",
+        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.19/airdress-linux-x86_64.mcpb.sigstore.json"
       },
-      "cert_identity": "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml@refs/tags/v0.1.17",
+      "cert_identity": "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml@refs/tags/v0.1.19",
       "cert_issuer": "https://token.actions.githubusercontent.com"
     },
     "linux-aarch64": {
-      "sha256": "89745deb4efa31ce95c730d8c29127f19f265519099cff6e08a6a1609e7c7434",
+      "sha256": "920f6b69ede78c6759b3d7d6ecc28dc747bdc522e456f8fb96f60d302820d41e",
       "bundle": {
-        "cdn": "https://downloads.airdress.co/claude-code/v0.1.17/airdress-linux-aarch64.mcpb",
-        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.17/airdress-linux-aarch64.mcpb"
+        "cdn": "https://downloads.airdress.co/claude-code/v0.1.19/airdress-linux-aarch64.mcpb",
+        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.19/airdress-linux-aarch64.mcpb"
       },
       "sigstore": {
-        "cdn": "https://downloads.airdress.co/claude-code/v0.1.17/airdress-linux-aarch64.mcpb.sigstore.json",
-        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.17/airdress-linux-aarch64.mcpb.sigstore.json"
+        "cdn": "https://downloads.airdress.co/claude-code/v0.1.19/airdress-linux-aarch64.mcpb.sigstore.json",
+        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.19/airdress-linux-aarch64.mcpb.sigstore.json"
       },
-      "cert_identity": "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml@refs/tags/v0.1.17",
+      "cert_identity": "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml@refs/tags/v0.1.19",
       "cert_issuer": "https://token.actions.githubusercontent.com"
     },
     "darwin-universal": {
-      "sha256": "0f665a944731e42a95f5166b7c7bd868deb5c4dc94fec828f52e21dbaf02087f",
+      "sha256": "141c20db0644611ee88fcf112c6eacdcb33f47ff824ddd06a58f4c8bda5e0ace",
       "bundle": {
-        "cdn": "https://downloads.airdress.co/claude-code/v0.1.17/airdress-darwin-universal.mcpb",
-        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.17/airdress-darwin-universal.mcpb"
+        "cdn": "https://downloads.airdress.co/claude-code/v0.1.19/airdress-darwin-universal.mcpb",
+        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.19/airdress-darwin-universal.mcpb"
       },
       "sigstore": {
-        "cdn": "https://downloads.airdress.co/claude-code/v0.1.17/airdress-darwin-universal.mcpb.sigstore.json",
-        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.17/airdress-darwin-universal.mcpb.sigstore.json"
+        "cdn": "https://downloads.airdress.co/claude-code/v0.1.19/airdress-darwin-universal.mcpb.sigstore.json",
+        "github": "https://github.com/airdress-co/airdress-claude-code/releases/download/v0.1.19/airdress-darwin-universal.mcpb.sigstore.json"
       },
-      "cert_identity": "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml@refs/tags/v0.1.17",
+      "cert_identity": "https://github.com/airdress-co/airdress-claude-code/.github/workflows/release.yml@refs/tags/v0.1.19",
       "cert_issuer": "https://token.actions.githubusercontent.com"
     }
   },
   "agent": {
-    "version": "v0.1.24",
+    "version": "v0.1.26",
     "origins": [
-      "https://downloads.airdress.co/airdress-cli/v0.1.24/",
-      "https://github.com/airdress-co/airdress-cli/releases/download/v0.1.24/"
+      "https://downloads.airdress.co/airdress-cli/v0.1.26/",
+      "https://github.com/airdress-co/airdress-cli/releases/download/v0.1.26/"
     ],
     "files": {
       "linux-x86_64": {
         "name": "airdress-agent-linux-amd64",
-        "sha256": "fd2218d3874bce5300a5d6cbedf6d36ad44dbb7c361084fa49edee8dcf0451e8"
+        "sha256": "df57cf48e28409b231d7971e17d3d5fc408bcb1e142d416d139ad74686392a0e"
       },
       "linux-aarch64": {
         "name": "airdress-agent-linux-arm64",
-        "sha256": "8528b12ab9623d3873671bf189446b02c747041d24f4f434ae9daeb0f236154c"
+        "sha256": "42aefd032484beff90f8a1b1bbd69fe6a2224331f01408e4418c9391bf7088cc"
       },
       "darwin-x86_64": {
         "name": "airdress-agent-darwin-amd64",
-        "sha256": "e591e97ab919b1c43140abd4bb1f885eceb97c0e08c476b41f2b30e73909efef"
+        "sha256": "ff152f7b8cba6c1cb4d1d2a2acf75df1f8aa9c21582029413250943192bc52f1"
       },
       "darwin-aarch64": {
         "name": "airdress-agent-darwin-arm64",
-        "sha256": "94c611733b5de9d703eff95e7eb86e32db9fe48a677f7dc6a91edb0233f963c5"
+        "sha256": "f55afb6add5c313ffb161f6aa8f8dbade5039209535f08ca2051d32943e1b5e8"
       }
     }
   },
