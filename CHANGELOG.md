@@ -4,7 +4,14 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
-## 0.1.18 — 2026-10-31
+## 0.1.19 — 2026-10-31
+
+- A session that misses its invitation to a conversation asks to rejoin
+  instead of losing the conversation for good (airdress-mls 0.6.1).
+- Carries 0.1.18's fix, which was never offered on its own.
+- airdress-cli v0.1.26.
+
+## 0.1.18 — 2026-10-31 (published, never pinned or offered; superseded by 0.1.19)
 
 - A session joins a new conversation again. A starting device host now
   retires the key packages it published earlier and offers the ones it
