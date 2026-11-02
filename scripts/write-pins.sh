@@ -13,7 +13,7 @@ cd "$(git rev-parse --show-toplevel)"
 version="${1:?usage: $0 <version>}"
 version="${version#v}"
 sums="dist/SHA256SUMS"
-[ -f "$sums" ] || { echo "no $sums: run this where the release was built" >&2; exit 1; }
+[[ -f "$sums" ]] || { echo "no $sums: run this where the release was built" >&2; exit 1; }
 
 python3 - "$version" <<'PY'
 import json, pathlib, sys

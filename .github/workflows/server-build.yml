@@ -43,7 +43,7 @@ jobs:
       XCODE_VERSION: "26.3"
       XCODE_BUILD: "17C529"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Read the pinned airdress-cli revision
         id: src
@@ -62,14 +62,14 @@ jobs:
       # fail as if it were a permissions problem of this workflow.
       - name: The server's source is public
         run: |
-          code=$(curl -s -o /dev/null -w '%{http_code}' "https://github.com/${{ steps.src.outputs.repository }}")
+          code=$(curl --proto '=https' --tlsv1.2 -s -o /dev/null -w '%{http_code}' "https://github.com/${{ steps.src.outputs.repository }}")
           if [ "$code" != "200" ]; then
             echo "::error::https://github.com/${{ steps.src.outputs.repository }} answers $code: the server's source is not public yet, so nobody else could rebuild this release. It is built from public source or not at all."
             exit 1
           fi
 
       - name: Check out the pinned airdress-cli
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: ${{ steps.src.outputs.repository }}
           ref: ${{ steps.src.outputs.tag }}
@@ -96,7 +96,7 @@ jobs:
           [ "$build" = "$XCODE_BUILD" ] || { echo "::error::$app is build $build, not $XCODE_BUILD"; exit 1; }
           xcodebuild -version
 
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master @ 2026-11-02
         if: runner.os == 'macOS'
         with:
           toolchain: "1.98.0"
@@ -195,7 +195,7 @@ jobs:
             --out "out/airdress-${{ matrix.platform }}.mcpb"
           shasum -a 256 out/*
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: server-${{ matrix.platform }}-${{ matrix.pass }}
           path: out/
@@ -209,10 +209,10 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - id: version
         run: echo "version=$(python3 -c "import json;print(json.load(open('plugins/airdress/.claude-plugin/plugin.json'))['version'])")" >> "$GITHUB_OUTPUT"
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: builds
       - name: Compare A and B, binary and bundle
