@@ -22,7 +22,7 @@ SOURCE=https://raw.githubusercontent.com/sigstore/root-signing/main/targets/trus
 tmp=$(mktemp)
 trap 'rm -f "$tmp"' EXIT
 
-curl -sSfL "$SOURCE" -o "$tmp"
+curl --proto '=https' --tlsv1.2 -sSfL "$SOURCE" -o "$tmp"
 
 # Refuse a file that is not the thing: a truncated download that still
 # had a 200 would otherwise be committed and break every verification.

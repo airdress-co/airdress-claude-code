@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # The manifest, as the harness reads it. `--strict` is the point:
       # a plugin that merely parses can still be one the marketplace
@@ -29,10 +29,14 @@ jobs:
       # a marketplace that validates can still point at a plugin that
       # does not. Measured 2026-10-03: the root call reports only
       # "Validating marketplace manifest".
+      # An exact version, not @latest: `npx --yes` installs and runs the
+      # package, lifecycle scripts included, so @latest ran whatever was
+      # published last in a job of a public repository. Bump it on
+      # purpose, when the validator's behavior is worth a review.
       - name: Validate the marketplace
-        run: npx --yes @anthropic-ai/claude-code@latest plugin validate --strict .
+        run: npx --yes @anthropic-ai/claude-code@2.1.316 plugin validate --strict .
       - name: Validate the plugin
-        run: npx --yes @anthropic-ai/claude-code@latest plugin validate --strict plugins/airdress
+        run: npx --yes @anthropic-ai/claude-code@2.1.316 plugin validate --strict plugins/airdress
 
       - name: The two manifests agree
         run: |
@@ -84,11 +88,11 @@ jobs:
           print(f"{len(declared)} commands, {len(hooks)} hook events, manifest consistent")
           PY
 
-      - uses: DavidAnson/markdownlint-cli2-action@v19
+      - uses: DavidAnson/markdownlint-cli2-action@05f32210e84442804257b2a6f20b273450ec8265 # v19.1.0
         with:
           globs: "**/*.md"
 
-      - uses: streetsidesoftware/cspell-action@v6
+      - uses: streetsidesoftware/cspell-action@e464ae97d348eb3beb0c5a6296dc4388ad4484d9 # v6.11.1
         with:
           incremental_files_only: false
 
@@ -97,7 +101,7 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           # The marketplace check reads the pinned commit's pins.json.
           fetch-depth: 0
@@ -114,7 +118,7 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
       - run: scripts/check-public.sh
@@ -132,7 +136,7 @@ jobs:
         run: |
           set -euo pipefail
           tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
-          curl -sSfL -o "$tarball" \
+          curl --proto '=https' --tlsv1.2 -sSfL -o "$tarball" \
             "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${tarball}"
           echo "${GITLEAKS_SHA256}  ${tarball}" | sha256sum -c -
           tar xzf "$tarball" gitleaks
@@ -152,20 +156,31 @@ jobs:
 
   launcher:
     name: Launcher
-    timeout-minutes: 20
+    timeout-minutes: 25
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # SonarQube decides what is new code from history and blame;
+          # a shallow clone makes every line look new.
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master @ 2026-11-02
         with:
           toolchain: "1.98.0"
-          components: clippy, rustfmt
-      - uses: Swatinem/rust-cache@v2
+          components: clippy, rustfmt, llvm-tools-preview
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: launcher-src
       - run: cargo fmt --manifest-path launcher-src/Cargo.toml --check
       - run: cargo clippy --manifest-path launcher-src/Cargo.toml --all-targets -- -D warnings
-      - run: cargo test --manifest-path launcher-src/Cargo.toml
+      - uses: taiki-e/install-action@682ce6c3c696a4cd5168a05f98e51aa02b877941 # v2.89.1
+        with:
+          tool: cargo-llvm-cov@0.9.1
+      # The tests run instrumented: one run gives the verdict and the
+      # coverage SonarQube Cloud reads. cargo-llvm-cov skips doc tests on
+      # stable; the launcher has none (no fenced block in a doc comment).
+      - name: Tests, with coverage
+        run: cargo llvm-cov --manifest-path launcher-src/Cargo.toml --lcov --output-path lcov.info
 
       # No telemetry, in the launcher or anything it pulls in (FR-112).
       # The pinned binary rather than the action, for the same reason the
@@ -178,7 +193,7 @@ jobs:
         run: |
           set -euo pipefail
           tarball="cargo-deny-${DENY_VERSION}-x86_64-unknown-linux-musl.tar.gz"
-          curl -sSfL -o "$tarball" \
+          curl --proto '=https' --tlsv1.2 -sSfL -o "$tarball" \
             "https://github.com/EmbarkStudios/cargo-deny/releases/download/${DENY_VERSION}/${tarball}"
           echo "${DENY_SHA256}  ${tarball}" | sha256sum -c -
           tar xzf "$tarball" --strip-components=1 \
@@ -187,12 +202,28 @@ jobs:
             check licenses advisories bans sources
           rm -f cargo-deny "$tarball"
 
+      # The "SonarCloud Code Analysis" check this posts is required on main.
+      # A fork's pull request gets no secrets, and a run without the token
+      # skips the scan rather than failing. The token is set only for the
+      # scan step, never for the build, whose build scripts run third-party
+      # code.
+      - name: SonarQube Cloud token present?
+        id: sonar
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: echo "enabled=${SONAR_TOKEN:+true}" >> "$GITHUB_OUTPUT"
+      - name: SonarQube Cloud analysis
+        if: steps.sonar.outputs.enabled == 'true'
+        uses: SonarSource/sonarqube-scan-action@4d1dc0c91ee400dcf8a6dddf2f705ac36542e304 # v8.4.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   reproducible:
     name: The launcher reproduces in its pinned toolchain
     timeout-minutes: 45
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # Both Linux platforms, inside the digest-pinned images named in
       # launcher-src/toolchain-images.json. Docker is already on the

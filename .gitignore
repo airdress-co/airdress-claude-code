@@ -9,3 +9,6 @@ launcher-src/target/
 # Editor and OS noise.
 .DS_Store
 __pycache__/
+
+# Coverage written by the Launcher job for SonarQube.
+/lcov.info

@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - run: |
           set -euo pipefail
           version=$(python3 -c "import json;print(json.load(open('plugins/airdress/.claude-plugin/plugin.json'))['version'])")
@@ -60,8 +60,8 @@ jobs:
     # The Apple secrets live in this environment only.
     environment: apple-signing
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: server-darwin-universal-A
           path: unsigned
@@ -97,7 +97,7 @@ jobs:
             --version "${{ needs.build.outputs.version }}" \
             --include LICENSE --include NOTICE \
             --out signed/airdress-darwin-universal.mcpb
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: signed-darwin-universal
           path: signed/airdress-darwin-universal.mcpb
@@ -114,8 +114,8 @@ jobs:
     outputs:
       subjects: ${{ steps.subjects.outputs.subjects }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: builds
       - name: Assemble dist/
@@ -128,7 +128,7 @@ jobs:
           (cd dist && sha256sum *.mcpb > SHA256SUMS)
           cat dist/SHA256SUMS
           scripts/release-notes.sh "${GITHUB_REF_NAME#v}" > dist/NOTES.md
-      - uses: sigstore/cosign-installer@v3
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
       # `--new-bundle-format`: the protobuf Sigstore bundle, the only form
       # the launcher parses. Without it cosign 2.x writes its legacy
       # `{"base64Signature", "cert", "rekorBundle"}` file, which cosign
@@ -158,7 +158,7 @@ jobs:
           done
       - id: subjects
         run: echo "subjects=$(cd dist && sha256sum *.mcpb | base64 -w0)" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dist
           path: dist/
@@ -176,6 +176,9 @@ jobs:
       actions: read
       id-token: write
       contents: write
+    # Stays a tag, unlike every other action here: the generator verifies
+    # that it was called by a release tag and refuses a commit SHA, and
+    # the provenance it signs names that tag. (SonarQube S7637, accepted.)
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
       base64-subjects: ${{ needs.package.outputs.subjects }}
@@ -191,17 +194,17 @@ jobs:
       contents: write   # the GitHub release
       id-token: write   # WIF to the CDN publisher
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dist
           path: dist
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: ${{ needs.provenance.outputs.provenance-name }}
           path: dist
-      - uses: sigstore/cosign-installer@v3
-      - uses: slsa-framework/slsa-verifier/actions/installer@v2.7.1
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
+      - uses: slsa-framework/slsa-verifier/actions/installer@ea584f4502babc6f60d9bc799dbbb13c1caa9ee6 # v2.7.1
       - name: Verify signatures and provenance before publishing
         run: |
           set -euo pipefail
@@ -234,11 +237,11 @@ jobs:
             exit 1
           fi
 
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
         with:
           workload_identity_provider: ${{ vars.RELEASE_WIF_PROVIDER }}
           service_account: ${{ vars.RELEASE_PUBLISHER_SA }}
-      - uses: google-github-actions/setup-gcloud@v2
+      - uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
       # The publisher may create under claude-code/ and never overwrite,
       # and --no-clobber says the same from this side.
       - name: Our CDN
@@ -256,8 +259,8 @@ jobs:
           tag="${GITHUB_REF_NAME}"
           mkdir -p from-cdn from-github
           for f in $(cd dist && ls *.mcpb *.sigstore.json SHA256SUMS); do
-            curl -fsSL -A airdress-launch -o "from-cdn/$f" "https://downloads.airdress.co/claude-code/$tag/$f"
-            curl -fsSL -A airdress-launch -o "from-github/$f" "https://github.com/${{ github.repository }}/releases/download/$tag/$f"
+            curl --proto '=https' --tlsv1.2 -fsSL -A airdress-launch -o "from-cdn/$f" "https://downloads.airdress.co/claude-code/$tag/$f"
+            curl --proto '=https' --tlsv1.2 -fsSL -A airdress-launch -o "from-github/$f" "https://github.com/${{ github.repository }}/releases/download/$tag/$f"
             cmp "dist/$f" "from-cdn/$f"
             cmp "dist/$f" "from-github/$f"
           done

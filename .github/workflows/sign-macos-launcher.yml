@@ -38,11 +38,11 @@ jobs:
     # and no pull request's own workflow — can read them.
     environment: apple-signing
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # Both runners agreed (the build workflow's compare job), so
       # either copy is the build.
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: launcher-darwin-universal-macos-26
           path: unsigned
@@ -85,7 +85,7 @@ jobs:
             echo "| either, signature aside (scripts/macho-unsigned.py) | \`$(shasum -a 256 "$RUNNER_TEMP/signed.form" | cut -d' ' -f1)\` |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: airdress-launch-signed
           path: signed/airdress-launch
