@@ -4,6 +4,16 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
+## 0.1.20 — 2026-11-05
+
+- Closing a session in the middle of a sign-in renewal no longer signs
+  the plugin out. The renewed sign-in is always saved, and a renewal that
+  got no answer is asked again in time to be repaired (AIR-173).
+- The server stops cleanly when it is asked to.
+- Tasks and requests for information from the airdress, as tools:
+  `work_list`, `work_get`, `work_draft`, `work_answer_draft`.
+- airdress-cli v0.1.32.
+
 ## 0.1.19 — 2026-10-31
 
 - A session that misses its invitation to a conversation asks to rejoin
