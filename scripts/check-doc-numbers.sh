@@ -37,7 +37,7 @@
 #     replacement.
 #   - Python docstrings: doc comments by another name.
 #   - Vendored / generated trees: node_modules, lockfiles.
-# cspell:ignore heredoc heredocs docstrings lstrip lastindex gecos lockfiles toplevel tfvars startswith endswith splitlines pipefail rsplit
+# cspell:ignore heredoc heredocs docstrings lstrip lastindex gecos lockfiles toplevel tfvars startswith endswith splitlines pipefail rsplit runbook justfile Justfile
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
