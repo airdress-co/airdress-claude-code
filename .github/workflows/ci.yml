@@ -306,3 +306,14 @@ jobs:
     uses: ./.github/workflows/macos-launcher-build.yml
     with:
       check-committed: true
+
+  # Document numbers stay out of code (airdress-ops CLAUDE.md). The same
+  # script is a prek hook; this job is what holds it on a pull request.
+  doc-numbers:
+    name: Document numbers stay out of code
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - run: bash scripts/check-doc-numbers.sh
