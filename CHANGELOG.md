@@ -4,6 +4,15 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
+## 0.1.21 — 2026-11-06
+
+- A chat message that waited for a session to start says so: it carries
+  when it was sent and how long it waited, and the session asks whether
+  a request in it still stands before acting on one that waited more
+  than an hour. Every chat message a session is shown carries its send
+  time.
+- airdress-cli v0.1.33.
+
 ## 0.1.20 — 2026-11-05
 
 - Closing a session in the middle of a sign-in renewal no longer signs
