@@ -4,6 +4,17 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
+## 0.1.22 — 2026-11-07
+
+- A chat message that waited more than an hour for a session is no
+  longer handed to it as a request. The session gets a notice naming
+  the message, reads it, and asks you whether it still stands before
+  doing anything.
+- A message from your own account, arriving before a session has looked
+  up which account it runs as, is no longer labelled as coming from a
+  sub-user.
+- airdress-cli v0.1.35.
+
 ## 0.1.21 — 2026-11-06
 
 - A chat message that waited for a session to start says so: it carries
