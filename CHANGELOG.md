@@ -4,6 +4,14 @@ Dates are the day a version was published. A version withdrawn after
 publication stays listed here, and says so: the record of what happened
 is more useful than a tidy list.
 
+## 0.1.23 — 2026-11-07
+
+- A session closed with `/exit` leaves the bus at once. Before, it stayed
+  listed, and still looked reachable by name, for about 90 seconds,
+  because Claude Code stops the session's server before it can say it is
+  leaving. The device host on the machine now ends the session for it.
+- airdress-cli v0.1.36.
+
 ## 0.1.22 — 2026-11-07
 
 - A chat message that waited more than an hour for a session is no
